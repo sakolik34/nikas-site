@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Мини-презентация компании Nikas.">
+    <title>О компании Nikas</title>
+    <link rel="icon" href="./icon_nikas-2.png">
+    <link rel="stylesheet" href="./about.css">
+</head>
+<body>
+    <a class="about-back" href="./index.html#home" data-back-button>
+        <span aria-hidden="true">‹</span>
+        <span data-i18n="about.back">Вернуться назад</span>
+    </a>
+
+    <div class="about-language" data-language-switcher></div>
+
+    <div class="about-progress" aria-hidden="true">
+        <span data-about-progress></span>
+    </div>
+
+    <div class="slide-counter" aria-hidden="true">
+        <span data-current-slide>01</span>
+        <span>/06</span>
+    </div>
+
+    <nav class="slide-dots" aria-label="Слайды о компании">
+        <button class="active" type="button" aria-label="Слайд 1" aria-current="true" data-slide-dot="0"></button>
+        <button type="button" aria-label="Слайд 2" data-slide-dot="1"></button>
+        <button type="button" aria-label="Слайд 3" data-slide-dot="2"></button>
+        <button type="button" aria-label="Слайд 4" data-slide-dot="3"></button>
+        <button type="button" aria-label="Слайд 5" data-slide-dot="4"></button>
+        <button type="button" aria-label="Слайд 6" data-slide-dot="5"></button>
+    </nav>
+
+    <main class="about-story" data-about-story>
+        <section class="about-slide intro-slide is-visible" data-slide>
+            <div class="side-product side-product-left" aria-hidden="true">
+                <img src="./leftside.jpg" alt="">
+            </div>
+            <div class="side-product side-product-right" aria-hidden="true">
+                <img src="./rightside.jpg" alt="">
+            </div>
+
+            <div class="slide-shell intro-shell">
+                <div class="brand-lockup">
+                    <img class="about-logo" src="./icon_nikas.png" alt="Nikas">
+                    <p class="eyebrow" data-i18n="about.presentation">Мини-презентация компании</p>
+                    <h1>Nikas</h1>
+                    <p class="lead" data-i18n="about.introText">
+                        Премиальная основа для рассказа о компании, ассортименте специй,
+                        пищевых ингредиентах и будущих поставках.
+                    </p>
+                    <div class="intro-actions">
+                        <a class="primary-link" href="./index.html#catalog" data-i18n="nav.catalog">Каталог</a>
+                        <a class="secondary-link" href="./index.html#contacts" data-i18n="nav.contacts">Контакты</a>
+                    </div>
+                </div>
+
+                <div class="intro-note">
+                    <span>Основана в 2000</span>
+                    <strong>Специи · добавки · белки</strong>
+                    <p>Тестовый блок для будущей истории, отзывов и красивых фактов о компании.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-slide editorial-slide" data-slide>
+            <div class="slide-shell editorial-shell">
+                <div class="editorial-photo" aria-hidden="true">
+                    <img src="./0e5d6e07d4947b3a25113105e31abf6d.jpg" alt="">
+                </div>
+
+                <div class="editorial-copy">
+                    <p class="eyebrow">О компании</p>
+                    <h2>Чистая подача без перегруза и случайных переносов</h2>
+                    <p>
+                        Этот слайд показывает спокойный журнальный формат: крупное фото,
+                        аккуратная типографика и короткие факты рядом с основным текстом.
+                    </p>
+
+                    <div class="fact-strip" aria-label="Короткие факты">
+                        <article>
+                            <strong>2000</strong>
+                            <span>год основания</span>
+                        </article>
+                        <article>
+                            <strong>24+</strong>
+                            <span>группы товаров</span>
+                        </article>
+                        <article>
+                            <strong>4.9</strong>
+                            <span>пример оценки</span>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-slide product-slide" data-slide>
+            <div class="slide-shell product-shell">
+                <div class="slide-heading">
+                    <p class="eyebrow">Интерактивный блок</p>
+                    <h2>Три варианта категории в одном слайде</h2>
+                    <p>
+                        Здесь можно нажимать на разделы. Так позже удобно показать специи,
+                        усилители вкуса и белковые ингредиенты без перехода на другую страницу.
+                    </p>
+                </div>
+
+                <div class="product-tabs" role="tablist" aria-label="Категории Nikas">
+                    <button class="active" type="button" role="tab" aria-selected="true" data-company-tab="spices">Специи</button>
+                    <button type="button" role="tab" aria-selected="false" data-company-tab="flavor">Усилители вкуса</button>
+                    <button type="button" role="tab" aria-selected="false" data-company-tab="protein">Белки</button>
+                </div>
+
+                <div class="product-panels">
+                    <article class="product-panel active" role="tabpanel" data-company-panel="spices">
+                        <img src="./spices.jpg" alt="Специи Nikas">
+                        <div>
+                            <span>01</span>
+                            <h3>Специи</h3>
+                            <p>Перец, чеснок, смеси и сухие ингредиенты для торговли и производства.</p>
+                        </div>
+                    </article>
+
+                    <article class="product-panel" role="tabpanel" data-company-panel="flavor" hidden>
+                        <img src="./flavor enhancer.jpg" alt="Усилители вкуса Nikas">
+                        <div>
+                            <span>02</span>
+                            <h3>Усилители вкуса</h3>
+                            <p>Пищевые добавки, глютамат натрия и технологические позиции для рецептур.</p>
+                        </div>
+                    </article>
+
+                    <article class="product-panel" role="tabpanel" data-company-panel="protein" hidden>
+                        <img src="./protein.jpg" alt="Белковые ингредиенты Nikas">
+                        <div>
+                            <span>03</span>
+                            <h3>Белки</h3>
+                            <p>Соевый изолят и белковые ингредиенты для пищевых задач и оптовых заказов.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-slide process-slide" data-slide>
+            <div class="slide-shell process-shell">
+                <div class="slide-heading left">
+                    <p class="eyebrow">Кликабельная схема</p>
+                    <h2>От выбора товара до заявки менеджеру</h2>
+                    <p>
+                        Этот вариант можно использовать как интерактивную схему работы компании:
+                        нажал на этап и увидел подробность справа.
+                    </p>
+                </div>
+
+                <div class="process-board">
+                    <div class="process-steps" aria-label="Этапы заказа">
+                        <button class="active" type="button" data-process-step="01" data-process-title="Выбор товара" data-process-text="Клиент открывает каталог, сравнивает позиции и добавляет нужные товары в корзину.">
+                            <span>01</span>
+                            <strong>Выбор</strong>
+                        </button>
+                        <button type="button" data-process-step="02" data-process-title="Уточнение деталей" data-process-text="Менеджер помогает уточнить фасовку, объем, цену за килограмм и удобный канал связи.">
+                            <span>02</span>
+                            <strong>Детали</strong>
+                        </button>
+                        <button type="button" data-process-step="03" data-process-title="Подготовка заказа" data-process-text="После подтверждения можно собрать заказ, сохранить заявку и подготовить данные для базы.">
+                            <span>03</span>
+                            <strong>Заказ</strong>
+                        </button>
+                    </div>
+
+                    <article class="process-detail" aria-live="polite">
+                        <span data-process-number>01</span>
+                        <h3 data-process-output-title>Выбор товара</h3>
+                        <p data-process-output-text>Клиент открывает каталог, сравнивает позиции и добавляет нужные товары в корзину.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-slide rail-slide" data-slide>
+            <div class="slide-shell rail-shell">
+                <div class="rail-top">
+                    <div class="slide-heading left">
+                        <p class="eyebrow">Горизонтальная лента</p>
+                        <h2>Разные блоки можно листать внутри слайда</h2>
+                    </div>
+
+                    <div class="rail-controls" aria-label="Управление лентой">
+                        <button type="button" aria-label="Назад" data-rail-control="-1">‹</button>
+                        <button type="button" aria-label="Вперед" data-rail-control="1">›</button>
+                    </div>
+                </div>
+
+                <div class="supply-rail" data-supply-rail tabindex="0">
+                    <article class="supply-card">
+                        <span>Склад</span>
+                        <h3>Фото и факты</h3>
+                        <p>Позже здесь можно показать склад, фасовку, упаковку или реальные фото товара.</p>
+                    </article>
+                    <article class="supply-card accent-green">
+                        <span>Отзывы</span>
+                        <h3>Доверие</h3>
+                        <p>Можно добавить короткие отзывы клиентов, оценки и аккуратные цитаты.</p>
+                    </article>
+                    <article class="supply-card accent-warm">
+                        <span>Логистика</span>
+                        <h3>Поставки</h3>
+                        <p>Подходит для рассказа о мешках, объемах, доставке и сроках выполнения заказа.</p>
+                    </article>
+                    <article class="supply-card">
+                        <span>Каталог</span>
+                        <h3>Синхронизация</h3>
+                        <p>В будущем сюда можно привязать управление товарами, ценами и фотографиями.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-slide final-slide" data-slide>
+            <div class="slide-shell final-shell">
+                <div class="final-copy">
+                    <p class="eyebrow">Финальный экран</p>
+                    <h2>Основа готова для настоящей истории Nikas</h2>
+                    <p>
+                        Сейчас это тестовая презентация с разными форматами: крупная обложка,
+                        фото-слайд, вкладки, кликабельная схема и прокручиваемая лента.
+                    </p>
+                    <div class="about-actions">
+                        <a class="primary-link" href="./index.html#catalog" data-i18n="hero.catalog">Смотреть каталог</a>
+                        <a class="secondary-link" href="./index.html#contacts" data-i18n="hero.contact">Связаться</a>
+                    </div>
+                </div>
+
+                <div class="final-stack" aria-hidden="true">
+                    <article>
+                        <span>01</span>
+                        <strong>Премиум</strong>
+                    </article>
+                    <article>
+                        <span>02</span>
+                        <strong>Минимализм</strong>
+                    </article>
+                    <article>
+                        <span>03</span>
+                        <strong>Интерактив</strong>
+                    </article>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="./i18n.js"></script>
+    <script src="./about.js"></script>
+</body>
+</html>

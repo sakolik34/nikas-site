@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Nikas Admin</title>
+    <link rel="icon" href="./icon_nikas-2.png">
+    <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+    <main class="admin-shell">
+        <section class="admin-login" id="adminLogin">
+            <div class="admin-login-card">
+                <img src="./icon_nikas.png" alt="Nikas">
+                <p class="admin-eyebrow">Nikas Admin</p>
+                <h1>Панель управления</h1>
+                <p>Вход только для администраторов, созданных вручную в Supabase.</p>
+
+                <form id="adminLoginForm" novalidate>
+                    <label>
+                        <span>Email</span>
+                        <input name="email" type="email" autocomplete="email" required>
+                    </label>
+                    <label>
+                        <span>Пароль</span>
+                        <input name="password" type="password" autocomplete="current-password" required>
+                    </label>
+                    <p class="admin-message" id="adminLoginMessage" aria-live="polite"></p>
+                    <button class="admin-primary" type="submit">Войти</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="admin-app" id="adminApp" hidden>
+            <header class="admin-header">
+                <div>
+                    <p class="admin-eyebrow">Nikas Admin</p>
+                    <h1>Управление сайтом</h1>
+                </div>
+                <div class="admin-header-actions">
+                    <div data-language-switcher></div>
+                    <a href="./index.html" class="admin-secondary">На сайт</a>
+                    <button class="admin-secondary" id="adminLogout" type="button">Выйти</button>
+                </div>
+            </header>
+
+            <nav class="admin-tabs" aria-label="Разделы админ-панели">
+                <button class="active" type="button" data-admin-tab="products">Товары</button>
+                <button type="button" data-admin-tab="contacts">Заявки</button>
+                <button type="button" data-admin-tab="orders">Товарные заявки</button>
+            </nav>
+
+            <p class="admin-message" id="adminGlobalMessage" aria-live="polite"></p>
+
+            <section class="admin-panel active" data-admin-panel="products">
+                <div class="admin-toolbar">
+                    <label>
+                        <span>Поиск</span>
+                        <input id="productSearch" type="search" placeholder="Название или slug">
+                    </label>
+                    <label>
+                        <span>Категория</span>
+                        <select id="productCategoryFilter">
+                            <option value="all">Все категории</option>
+                        </select>
+                    </label>
+                    <button class="admin-primary" id="newProductButton" type="button">Добавить товар</button>
+                </div>
+
+                <div class="admin-grid">
+                    <div class="admin-list" id="productsList" aria-live="polite"></div>
+
+                    <form class="admin-editor" id="productForm" novalidate>
+                        <div class="admin-editor-head">
+                            <div>
+                                <p class="admin-eyebrow">Карточка товара</p>
+                                <h2 id="productFormTitle">Новый товар</h2>
+                            </div>
+                            <button class="admin-secondary" id="resetProductForm" type="button">Очистить</button>
+                        </div>
+
+                        <input name="id" type="hidden">
+
+                        <div class="admin-form-row">
+                            <label>
+                                <span>Slug *</span>
+                                <input name="slug" type="text" required>
+                            </label>
+                            <label>
+                                <span>Категория *</span>
+                                <select name="category_id" required></select>
+                            </label>
+                        </div>
+
+                        <div class="admin-form-row">
+                            <label>
+                                <span>Порядок</span>
+                                <input name="display_order" type="number" step="1" value="0">
+                            </label>
+                            <label>
+                                <span>Тон карточки</span>
+                                <select name="tone">
+                                    <option value="pepper">pepper</option>
+                                    <option value="whole">whole</option>
+                                    <option value="mixes">mixes</option>
+                                    <option value="additives">additives</option>
+                                    <option value="citric">citric</option>
+                                    <option value="vegetables">vegetables</option>
+                                    <option value="soy">soy</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <label class="admin-check">
+                            <input name="active" type="checkbox" checked>
+                            <span>Показывать товар на сайте</span>
+                        </label>
+
+                        <div class="admin-language-grid">
+                            <fieldset>
+                                <legend>Українська</legend>
+                                <input name="name_uk" type="text" placeholder="Назва *" required>
+                                <textarea name="short_description_uk" rows="3" placeholder="Короткий опис"></textarea>
+                                <textarea name="description_uk" rows="4" placeholder="Повний опис"></textarea>
+                                <input name="pack_uk" type="text" placeholder="Фасування">
+                            </fieldset>
+                            <fieldset>
+                                <legend>Русский</legend>
+                                <input name="name_ru" type="text" placeholder="Название *" required>
+                                <textarea name="short_description_ru" rows="3" placeholder="Короткое описание"></textarea>
+                                <textarea name="description_ru" rows="4" placeholder="Полное описание"></textarea>
+                                <input name="pack_ru" type="text" placeholder="Фасовка">
+                            </fieldset>
+                            <fieldset>
+                                <legend>English</legend>
+                                <input name="name_en" type="text" placeholder="Name *" required>
+                                <textarea name="short_description_en" rows="3" placeholder="Short description"></textarea>
+                                <textarea name="description_en" rows="4" placeholder="Full description"></textarea>
+                                <input name="pack_en" type="text" placeholder="Packing">
+                            </fieldset>
+                        </div>
+
+                        <div class="admin-image-box">
+                            <label>
+                                <span>Загрузить основное фото</span>
+                                <input name="image" type="file" accept="image/png,image/jpeg,image/webp">
+                            </label>
+                            <div class="admin-images" id="productImages"></div>
+                        </div>
+
+                        <p class="admin-message" id="productFormMessage" aria-live="polite"></p>
+
+                        <div class="admin-editor-actions">
+                            <button class="admin-primary" id="saveProductButton" type="submit">Сохранить товар</button>
+                            <button class="admin-danger" id="deactivateProductButton" type="button">Скрыть товар</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="admin-panel" data-admin-panel="contacts">
+                <div class="admin-toolbar">
+                    <label>
+                        <span>Статус</span>
+                        <select data-request-filter="contact">
+                            <option value="all">Все</option>
+                            <option value="new">Новые</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="completed">Завершенные</option>
+                        </select>
+                    </label>
+                    <button class="admin-secondary" data-refresh-requests="contact" type="button">Обновить</button>
+                </div>
+                <div class="request-list" id="contactRequestsList"></div>
+            </section>
+
+            <section class="admin-panel" data-admin-panel="orders">
+                <div class="admin-toolbar">
+                    <label>
+                        <span>Статус</span>
+                        <select data-request-filter="product">
+                            <option value="all">Все</option>
+                            <option value="new">Новые</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="completed">Завершенные</option>
+                        </select>
+                    </label>
+                    <button class="admin-secondary" data-refresh-requests="product" type="button">Обновить</button>
+                </div>
+                <div class="request-list" id="productRequestsList"></div>
+            </section>
+        </section>
+    </main>
+
+    <script src="./supabase-config.js"></script>
+    <script src="./i18n.js"></script>
+    <script src="./nikas-api.js"></script>
+    <script src="./admin.js"></script>
+</body>
+</html>

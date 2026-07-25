@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Каталог товаров Nikas: специи, пищевые добавки и ингредиенты.">
+    <title>Каталог Nikas</title>
+    <link rel="icon" href="./icon_nikas-2.png">
+    <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+    <header class="site-header">
+        <button class="menu-button" id="menuButton" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="sidebar" data-i18n-aria-label="nav.openMenu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <nav class="header-nav" aria-label="Основная навигация" data-i18n-aria-label="nav.mainNav">
+            <a href="./index.html#home" data-i18n="nav.home">Главная</a>
+            <a href="./index.html#catalog" data-i18n="nav.catalog">Каталог</a>
+            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="./index.html#contacts" data-i18n="nav.contacts">Контакты</a>
+        </nav>
+
+        <a class="header-logo" href="./index.html#home" aria-label="Nikas">
+            <img src="./icon_nikas.png" alt="Nikas">
+        </a>
+
+        <div class="header-actions">
+            <div class="cart-dropdown" id="cartDropdown">
+                <button class="cart-button" id="cartButton" type="button" aria-label="Открыть корзину" aria-expanded="false" aria-controls="cartMenu">
+                    <svg class="cart-button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6.2 7.4h15.1l-1.7 8.1a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.7L5.5 4.8H3.2"></path>
+                        <path d="M9.1 20.1h.1"></path>
+                        <path d="M17.2 20.1h.1"></path>
+                    </svg>
+                    <span class="cart-button-text" data-i18n="cart.title">Корзина</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+
+                <div class="cart-menu" id="cartMenu" aria-label="Корзина Nikas">
+                    <div class="cart-menu-head">
+                        <strong data-i18n="cart.title">Корзина</strong>
+                        <span id="cartSummary">0 товаров</span>
+                    </div>
+                    <div class="cart-empty" id="cartEmpty" data-i18n="cart.empty">Пока ничего не выбрано.</div>
+                    <div class="cart-list" id="cartList"></div>
+                    <div class="cart-menu-footer">
+                        <button class="cart-clear" id="cartClear" type="button" data-i18n="cart.clear">Очистить</button>
+                        <button class="cart-order" id="cartOrderLink" type="button" data-i18n="cart.order">Оформить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div data-language-switcher></div>
+
+            <div class="contact-dropdown" id="contactDropdown">
+                <button class="contact-button" id="contactButton" type="button" aria-expanded="false" aria-controls="contactMenu" data-i18n="contact.open">
+                    Связаться
+                </button>
+
+                <div class="contact-menu" id="contactMenu" aria-label="Контакты Nikas">
+                    <a class="contact-link" href="https://wa.me/380986778707" target="_blank" rel="noopener">
+                        <span>WhatsApp</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                    <a class="contact-link" href="viber://chat?number=%2B380986778707">
+                        <span>Viber</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                    <a class="contact-link" href="tg://resolve?phone=380986778707">
+                        <span>Telegram</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                    <a class="contact-link" href="tel:+380986778707">
+                        <span>Телефон</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <aside class="sidebar" id="sidebar" aria-hidden="true">
+        <div class="sidebar-logo">
+            <img src="./icon_nikas.png" alt="">
+            <span>Nikas</span>
+        </div>
+
+        <nav class="sidebar-menu" aria-label="Меню сайта" data-i18n-aria-label="nav.sidebar">
+            <a href="./index.html#home" data-i18n="nav.home">Главная</a>
+            <a href="./index.html#catalog" data-i18n="nav.catalog">Каталог</a>
+            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="./index.html#contacts" data-i18n="nav.contacts">Контакты</a>
+        </nav>
+
+        <div class="sidebar-contacts">
+            <p data-i18n="contact.quick">Быстрая связь</p>
+            <a href="https://wa.me/380986778707" target="_blank" rel="noopener">WhatsApp: +380 98 677 87 07</a>
+            <a href="viber://chat?number=%2B380986778707">Viber: +380 98 677 87 07</a>
+            <a href="tg://resolve?phone=380986778707">Telegram: +380 98 677 87 07</a>
+            <a href="tel:+380986778707">Телефон: +380 98 677 87 07</a>
+        </div>
+    </aside>
+
+    <div class="overlay" id="overlay" hidden></div>
+
+    <main class="catalog-page">
+        <section class="catalog-page-hero">
+            <a class="back-link" href="./index.html#catalog" data-i18n="category.page.back">Назад к мини-каталогу</a>
+            <p class="eyebrow" id="categoryBadge">Каталог Nikas</p>
+            <h1 id="categoryTitle">Каталог товаров</h1>
+            <p id="categoryDescription">
+                Выберите товар, чтобы позже добавить его в корзину или отправить заявку менеджеру.
+            </p>
+            <div class="catalog-page-actions">
+                <a class="button secondary" href="./category.html?category=all" data-i18n="category.page.all">Смотреть все товары</a>
+                <a class="button primary" href="./index.html#contacts" data-i18n="category.page.contact">Связаться</a>
+            </div>
+        </section>
+
+        <section class="product-section" aria-labelledby="productSectionTitle">
+            <div class="product-toolbar">
+                <div>
+                    <p class="eyebrow" data-i18n="category.page.productsBadge">Товары раздела</p>
+                    <h2 id="productSectionTitle">Позиции</h2>
+                </div>
+                <p class="section-note" id="productCount">0 товаров</p>
+            </div>
+
+            <div class="product-grid" id="productGrid"></div>
+            <p class="empty-state" id="emptyState" hidden data-i18n="product.empty">В этом разделе пока нет товаров.</p>
+        </section>
+    </main>
+
+    <script src="./supabase-config.js"></script>
+    <script src="./i18n.js"></script>
+    <script src="./catalog-data.js"></script>
+    <script src="./nikas-api.js"></script>
+    <script src="./cart.js"></script>
+    <script src="./index.js"></script>
+    <script src="./category.js"></script>
+</body>
+</html>

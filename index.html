@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nikas - качественные пищевые продукты для дома, кафе и магазинов.">
+    <title>Nikas - пищевые продукты</title>
+    <link rel="icon" href="./icon_nikas-2.png">
+    <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+    <header class="site-header">
+        <button class="menu-button" id="menuButton" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="sidebar" data-i18n-aria-label="nav.openMenu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <nav class="header-nav" aria-label="Основная навигация" data-i18n-aria-label="nav.mainNav">
+            <a href="#home" data-i18n="nav.home">Главная</a>
+            <a href="#catalog" data-i18n="nav.catalog">Каталог</a>
+            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+        </nav>
+
+        <a class="header-logo" href="#home" aria-label="Nikas">
+            <img src="./icon_nikas.png" alt="Nikas">
+        </a>
+
+        <div class="header-actions">
+            <div class="cart-dropdown" id="cartDropdown">
+                <button class="cart-button" id="cartButton" type="button" aria-label="Открыть корзину" aria-expanded="false" aria-controls="cartMenu">
+                    <svg class="cart-button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6.2 7.4h15.1l-1.7 8.1a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.7L5.5 4.8H3.2"></path>
+                        <path d="M9.1 20.1h.1"></path>
+                        <path d="M17.2 20.1h.1"></path>
+                    </svg>
+                    <span class="cart-button-text" data-i18n="cart.title">Корзина</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+
+                <div class="cart-menu" id="cartMenu" aria-label="Корзина Nikas">
+                    <div class="cart-menu-head">
+                        <strong data-i18n="cart.title">Корзина</strong>
+                        <span id="cartSummary">0 товаров</span>
+                    </div>
+                    <div class="cart-empty" id="cartEmpty" data-i18n="cart.empty">Пока ничего не выбрано.</div>
+                    <div class="cart-list" id="cartList"></div>
+                    <div class="cart-menu-footer">
+                        <button class="cart-clear" id="cartClear" type="button" data-i18n="cart.clear">Очистить</button>
+                        <button class="cart-order" id="cartOrderLink" type="button" data-i18n="cart.order">Оформить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div data-language-switcher></div>
+
+            <div class="contact-dropdown" id="contactDropdown">
+                <button class="contact-button" id="contactButton" type="button" aria-expanded="false" aria-controls="contactMenu" data-i18n="contact.open">
+                    Связаться
+                </button>
+
+                <div class="contact-menu" id="contactMenu" aria-label="Контакты Nikas">
+                    <a class="contact-link" href="https://wa.me/380986778707" target="_blank" rel="noopener">
+                        <span>WhatsApp</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                    <a class="contact-link" href="viber://chat?number=%2B380986778707">
+                        <span>Viber</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                    <a class="contact-link" href="tg://resolve?phone=380986778707">
+                        <span>Telegram</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                    <a class="contact-link" href="tel:+380986778707">
+                        <span>Телефон</span>
+                        <strong>+380 98 677 87 07</strong>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <aside class="sidebar" id="sidebar" aria-hidden="true">
+        <div class="sidebar-logo">
+            <img src="./icon_nikas.png" alt="">
+            <span>Nikas</span>
+        </div>
+
+        <nav class="sidebar-menu" aria-label="Меню сайта" data-i18n-aria-label="nav.sidebar">
+            <a href="#home" data-i18n="nav.home">Главная</a>
+            <a href="#catalog" data-i18n="nav.catalog">Каталог</a>
+            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+        </nav>
+
+        <div class="sidebar-contacts">
+            <p data-i18n="contact.quick">Быстрая связь</p>
+            <a href="https://wa.me/380986778707" target="_blank" rel="noopener">WhatsApp: +380 98 677 87 07</a>
+            <a href="viber://chat?number=%2B380986778707">Viber: +380 98 677 87 07</a>
+            <a href="tg://resolve?phone=380986778707">Telegram: +380 98 677 87 07</a>
+            <a href="tel:+380986778707">Телефон: +380 98 677 87 07</a>
+        </div>
+    </aside>
+
+    <div class="overlay" id="overlay" hidden></div>
+
+    <main>
+        <section class="hero" id="home">
+            <div class="hero-sticky">
+                <div class="hero-shade" aria-hidden="true"></div>
+
+                <div class="hero-side-image hero-side-left" aria-hidden="true">
+                    <img src="./leftside.jpg" alt="">
+                </div>
+
+                <div class="hero-side-image hero-side-right" aria-hidden="true">
+                    <img src="./rightside.jpg" alt="">
+                </div>
+
+                <div class="hero-reveal" aria-label="Nikas">
+                    <p class="eyebrow" data-i18n="hero.eyebrow">Пищевые продукты Nikas</p>
+                    <h1 data-i18n="hero.title">Nikas - идеальный выбор качественных продуктов.</h1>
+                    <p class="hero-text" data-i18n="hero.text">
+                        Качественные специи и пищевые ингредиенты для торговли, производства и профессиональной кухни.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="button primary" href="#catalog" data-i18n="hero.catalog">Смотреть каталог</a>
+                        <a class="button secondary" href="#contacts" data-i18n="hero.contact">Связаться</a>
+                    </div>
+                </div>
+
+                <div class="hero-scroll-cue" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="section catalog-section" id="catalog">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow" data-i18n="catalog.eyebrow">Мини-каталог Nikas</p>
+                    <h2 data-i18n="catalog.title">Основные направления компании</h2>
+                </div>
+                <p class="section-note" data-i18n="catalog.note">Выберите направление, чтобы посмотреть товары и отправить заявку.</p>
+            </div>
+
+            <div class="category-grid">
+                <a class="category-card category-spices" href="./category.html?category=spices">
+                    <span class="category-visual" aria-hidden="true"></span>
+                    <span class="category-content">
+                        <span class="product-number">№1</span>
+                        <strong data-i18n="category.spices.title">Специи</strong>
+                        <span data-i18n="category.spices.description">Перец, паприка, сушеный чеснок и базовые позиции для кухни и производства.</span>
+                    </span>
+                </a>
+
+                <a class="category-card category-flavor" href="./category.html?category=flavor-enhancers">
+                    <span class="category-visual" aria-hidden="true"></span>
+                    <span class="category-content">
+                        <span class="product-number">№2</span>
+                        <strong data-i18n="category.flavor.title">Усилители вкуса</strong>
+                        <span data-i18n="category.flavor.description">Глутамат натрия, пищевые кислоты и технологические ингредиенты.</span>
+                    </span>
+                </a>
+
+                <a class="category-card category-protein" href="./category.html?category=proteins">
+                    <span class="category-visual" aria-hidden="true"></span>
+                    <span class="category-content">
+                        <span class="product-number">№3</span>
+                        <strong data-i18n="category.protein.title">Белки</strong>
+                        <span data-i18n="category.protein.description">Соевые белковые ингредиенты для пищевого производства и технологических задач.</span>
+                    </span>
+                </a>
+            </div>
+
+            <div class="catalog-actions">
+                <a class="button primary catalog-all-button" href="./category.html?category=all" data-i18n="catalog.allProducts">Все продукты</a>
+            </div>
+        </section>
+
+        <section class="section contacts-section" id="contacts">
+            <div class="contacts-copy">
+                <p class="eyebrow" data-i18n="contacts.eyebrow">Контакты</p>
+                <h2 data-i18n="contacts.title">Свяжитесь с нами</h2>
+                <p data-i18n="contacts.text">
+                    Оставьте заявку, и мы подготовим ответ по специям, пищевым ингредиентам,
+                    фасовке или оптовому заказу.
+                </p>
+                <a class="contact-phone-link" href="tel:+380986778707">+380 98 677 87 07</a>
+            </div>
+
+            <form class="contact-form" id="contactForm" novalidate>
+                <label>
+                    <span data-i18n="form.name">Имя *</span>
+                    <input id="contactName" name="name" type="text" autocomplete="name" required>
+                </label>
+
+                <label>
+                    <span data-i18n="form.phone">Телефон *</span>
+                    <input id="contactPhone" name="phone" type="tel" autocomplete="tel" required>
+                </label>
+
+                <label>
+                    <span data-i18n="form.email">Почта</span>
+                    <input id="contactEmail" name="email" type="email" autocomplete="email">
+                </label>
+
+                <label class="contact-form-wide">
+                    <span data-i18n="form.question">Вопрос</span>
+                    <textarea id="contactQuestion" name="question" rows="6"></textarea>
+                </label>
+
+                <label class="form-honeypot" aria-hidden="true">
+                    <span data-i18n="form.honeypot">Не заполняйте это поле</span>
+                    <input name="website" type="text" tabindex="-1" autocomplete="off">
+                </label>
+
+                <p class="form-message contact-form-wide" id="contactFormMessage" aria-live="polite"></p>
+
+                <button class="button primary contact-submit contact-form-wide" id="contactSubmit" type="submit" disabled>
+                    <span data-i18n="form.submit">Отправить заявку</span>
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <footer class="site-footer" aria-label="Контактная информация Nikas">
+        <div class="footer-brand">
+            <a class="footer-logo" href="#home" aria-label="Nikas">
+                <img src="./icon_nikas.png" alt="Nikas">
+                <span>Nikas</span>
+            </a>
+            <p>
+                <span data-i18n="footer.brand">Специи и пищевые ингредиенты для торговли, производства и профессиональной кухни.</span>
+            </p>
+        </div>
+
+        <nav class="footer-column" aria-label="Информация">
+            <h2 data-i18n="footer.info">Информация</h2>
+            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="#catalog" data-i18n="nav.catalog">Каталог</a>
+            <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+            <a href="#home" data-i18n="nav.home">Главная</a>
+        </nav>
+
+        <nav class="footer-column" aria-label="Продукция">
+            <h2 data-i18n="footer.products">Продукция</h2>
+            <a href="./category.html?category=spices" data-i18n="category.spices.title">Специи</a>
+            <a href="./category.html?category=flavor-enhancers" data-i18n="category.flavor.title">Усилители вкуса</a>
+            <a href="./category.html?category=proteins" data-i18n="category.protein.title">Белки</a>
+            <a href="./category.html?category=all" data-i18n="catalog.allProducts">Все продукты</a>
+        </nav>
+
+        <div class="footer-column footer-contacts">
+            <h2 data-i18n="footer.contacts">Наши контакты</h2>
+
+            <div class="footer-contact-item">
+                <span class="footer-contact-icon" aria-hidden="true">⏱</span>
+                <p>
+                    <strong data-i18n="footer.scheduleTitle">График работы:</strong>
+                    <span data-i18n="footer.schedule">Пн-Пт 9:00-18:00
+Сб-Вс - выходной</span>
+                </p>
+            </div>
+
+            <div class="footer-contact-item">
+                <span class="footer-contact-icon" aria-hidden="true">☎</span>
+                <p>
+                    <a href="tel:+380986778707">+380 98 677 87 07</a>
+                    <a href="https://wa.me/380986778707" target="_blank" rel="noopener">WhatsApp: +380 98 677 87 07</a>
+                    <a href="viber://chat?number=%2B380986778707">Viber: +380 98 677 87 07</a>
+                    <a href="tg://resolve?phone=380986778707">Telegram: +380 98 677 87 07</a>
+                </p>
+            </div>
+
+            <div class="footer-contact-item">
+                <span class="footer-contact-icon" aria-hidden="true">⌖</span>
+                <p>
+                    <strong data-i18n="footer.addressTitle">Адрес:</strong>
+                    <span data-i18n="footer.address">Украина, адрес компании уточняется</span>
+                </p>
+            </div>
+
+            <div class="footer-contact-item">
+                <span class="footer-contact-icon" aria-hidden="true">✉</span>
+                <p>
+                    <a href="mailto:info@nikas.example">info@nikas.example</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="./supabase-config.js"></script>
+    <script src="./i18n.js"></script>
+    <script src="./catalog-data.js"></script>
+    <script src="./nikas-api.js"></script>
+    <script src="./cart.js"></script>
+    <script src="./index.js"></script>
+</body>
+</html>

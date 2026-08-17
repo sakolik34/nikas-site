@@ -29,26 +29,26 @@
 
         <div class="header-actions">
             <div class="cart-dropdown" id="cartDropdown">
-                <button class="cart-button" id="cartButton" type="button" aria-label="Открыть корзину" aria-expanded="false" aria-controls="cartMenu">
+                <button class="cart-button" id="cartButton" type="button" aria-label="Открыть заявку" aria-expanded="false" aria-controls="cartMenu">
                     <svg class="cart-button-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M6.2 7.4h15.1l-1.7 8.1a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.7L5.5 4.8H3.2"></path>
-                        <path d="M9.1 20.1h.1"></path>
-                        <path d="M17.2 20.1h.1"></path>
+                        <rect x="5" y="4" width="14" height="17" rx="2"></rect>
+                        <path d="M9 4.5V3h6v1.5"></path>
+                        <path d="M9 10h6M9 14h6M9 18h4"></path>
                     </svg>
-                    <span class="cart-button-text" data-i18n="cart.title">Корзина</span>
+                    <span class="cart-button-text" data-i18n="cart.title">Заявка</span>
                     <span class="cart-count" id="cartCount">0</span>
                 </button>
 
-                <div class="cart-menu" id="cartMenu" aria-label="Корзина Nikas">
+                <div class="cart-menu" id="cartMenu" aria-label="Заявка Nikas">
                     <div class="cart-menu-head">
-                        <strong data-i18n="cart.title">Корзина</strong>
+                        <strong data-i18n="cart.title">Заявка</strong>
                         <span id="cartSummary">0 товаров</span>
                     </div>
-                    <div class="cart-empty" id="cartEmpty" data-i18n="cart.empty">Пока ничего не выбрано.</div>
+                    <div class="cart-empty" id="cartEmpty" data-i18n="cart.empty">Добавляйте товары, которые хотите уточнить или заказать.</div>
                     <div class="cart-list" id="cartList"></div>
                     <div class="cart-menu-footer">
                         <button class="cart-clear" id="cartClear" type="button" data-i18n="cart.clear">Очистить</button>
-                        <button class="cart-order" id="cartOrderLink" type="button" data-i18n="cart.order">Оформить</button>
+                        <button class="cart-order" id="cartOrderLink" type="button" data-i18n="cart.order">Оформить заявку</button>
                     </div>
                 </div>
             </div>
@@ -195,23 +195,23 @@
 
             <form class="contact-form" id="contactForm" novalidate>
                 <label>
-                    <span data-i18n="form.name">Имя *</span>
-                    <input id="contactName" name="name" type="text" autocomplete="name" required>
+                    <span data-i18n="form.name">Имя и фамилия *</span>
+                    <input id="contactName" name="name" type="text" autocomplete="name" minlength="2" maxlength="120" placeholder="Например, Александр" data-i18n-placeholder="form.namePlaceholder" required>
                 </label>
 
                 <label>
                     <span data-i18n="form.phone">Телефон *</span>
-                    <input id="contactPhone" name="phone" type="tel" autocomplete="tel" required>
+                    <input id="contactPhone" name="phone" type="tel" autocomplete="tel" minlength="5" maxlength="40" placeholder="+380 00 000 00 00" data-i18n-placeholder="form.phonePlaceholder" required>
                 </label>
 
                 <label>
-                    <span data-i18n="form.email">Почта</span>
-                    <input id="contactEmail" name="email" type="email" autocomplete="email">
+                    <span data-i18n="form.email">Электронная почта (необязательно)</span>
+                    <input id="contactEmail" name="email" type="email" autocomplete="email" maxlength="180" placeholder="name@example.com" data-i18n-placeholder="form.emailPlaceholder">
                 </label>
 
                 <label class="contact-form-wide">
-                    <span data-i18n="form.question">Вопрос</span>
-                    <textarea id="contactQuestion" name="question" rows="6"></textarea>
+                    <span data-i18n="form.question">Что хотите уточнить? (необязательно)</span>
+                    <textarea id="contactQuestion" name="question" rows="6" maxlength="2000" placeholder="Напишите товар, нужный объём, фасовку или условия доставки" data-i18n-placeholder="form.questionPlaceholder"></textarea>
                 </label>
 
                 <label class="form-honeypot" aria-hidden="true">

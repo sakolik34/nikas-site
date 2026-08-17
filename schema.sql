@@ -72,9 +72,16 @@ create table if not exists public.products (
     pack_uk text,
     pack_ru text,
     pack_en text,
+    price_uk text,
+    price_ru text,
+    price_en text,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
+
+alter table public.products add column if not exists price_uk text;
+alter table public.products add column if not exists price_ru text;
+alter table public.products add column if not exists price_en text;
 
 create table if not exists public.product_images (
     id uuid primary key default gen_random_uuid(),
@@ -88,6 +95,18 @@ create table if not exists public.product_images (
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     unique (product_id, storage_path)
+);
+
+create table if not exists public.product_pack_options (
+    id uuid primary key default gen_random_uuid(),
+    product_id uuid not null references public.products(id) on delete cascade,
+    active boolean not null default true,
+    display_order integer not null default 0,
+    label_uk text,
+    label_ru text not null check (char_length(label_ru) between 1 and 220),
+    label_en text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
 );
 
 create table if not exists public.contact_requests (
@@ -131,10 +150,15 @@ create table if not exists public.product_request_items (
     product_slug text,
     category_id text,
     product_name_snapshot text not null,
+    pack_snapshot text check (pack_snapshot is null or char_length(pack_snapshot) <= 220),
+    price_snapshot text check (price_snapshot is null or char_length(price_snapshot) <= 120),
     quantity integer not null default 1 check (quantity between 1 and 999),
     display_order integer not null default 0,
     created_at timestamptz not null default now()
 );
+
+alter table public.product_request_items add column if not exists pack_snapshot text;
+alter table public.product_request_items add column if not exists price_snapshot text;
 
 create table if not exists public.submission_rate_limits (
     rate_key text primary key,
@@ -146,6 +170,7 @@ create table if not exists public.submission_rate_limits (
 create index if not exists categories_active_order_idx on public.categories (active, display_order);
 create index if not exists products_active_category_order_idx on public.products (active, category_id, display_order);
 create index if not exists product_images_product_order_idx on public.product_images (product_id, is_primary desc, display_order);
+create index if not exists product_pack_options_product_order_idx on public.product_pack_options (product_id, active, display_order);
 create index if not exists contact_requests_status_created_idx on public.contact_requests (status, created_at desc);
 create index if not exists product_requests_status_created_idx on public.product_requests (status, created_at desc);
 create index if not exists product_request_items_request_idx on public.product_request_items (request_id, display_order);
@@ -168,6 +193,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists product_images_updated_at on public.product_images;
 create trigger product_images_updated_at
 before update on public.product_images
+for each row execute function public.set_updated_at();
+
+drop trigger if exists product_pack_options_updated_at on public.product_pack_options;
+create trigger product_pack_options_updated_at
+before update on public.product_pack_options
 for each row execute function public.set_updated_at();
 
 drop trigger if exists contact_requests_updated_at on public.contact_requests;
@@ -204,20 +234,7 @@ insert into public.categories (
      'Соєві білкові інгредієнти для харчового виробництва та технологічних задач.',
      'Соевые белковые ингредиенты для пищевого производства и технологических задач.',
      'Soy protein ingredients for food production and technical tasks.')
-on conflict (id) do update set
-    slug = excluded.slug,
-    tone = excluded.tone,
-    active = excluded.active,
-    display_order = excluded.display_order,
-    title_uk = excluded.title_uk,
-    title_ru = excluded.title_ru,
-    title_en = excluded.title_en,
-    short_title_uk = excluded.short_title_uk,
-    short_title_ru = excluded.short_title_ru,
-    short_title_en = excluded.short_title_en,
-    description_uk = excluded.description_uk,
-    description_ru = excluded.description_ru,
-    description_en = excluded.description_en;
+on conflict (id) do nothing;
 
 insert into public.products (
     slug, category_id, tone, active, display_order,
@@ -298,28 +315,13 @@ insert into public.products (
      'Ингредиент для производителей и оптовых заказов.',
      'An ingredient for manufacturers and wholesale orders.',
      'Мішки 20 / 25 кг', 'Мешки 20 / 25 кг', '20 / 25 kg bags')
-on conflict (slug) do update set
-    category_id = excluded.category_id,
-    tone = excluded.tone,
-    active = excluded.active,
-    display_order = excluded.display_order,
-    name_uk = excluded.name_uk,
-    name_ru = excluded.name_ru,
-    name_en = excluded.name_en,
-    short_description_uk = excluded.short_description_uk,
-    short_description_ru = excluded.short_description_ru,
-    short_description_en = excluded.short_description_en,
-    description_uk = excluded.description_uk,
-    description_ru = excluded.description_ru,
-    description_en = excluded.description_en,
-    pack_uk = excluded.pack_uk,
-    pack_ru = excluded.pack_ru,
-    pack_en = excluded.pack_en;
+on conflict (slug) do nothing;
 
 alter table public.admin_profiles enable row level security;
 alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.product_images enable row level security;
+alter table public.product_pack_options enable row level security;
 alter table public.contact_requests enable row level security;
 alter table public.product_requests enable row level security;
 alter table public.product_request_items enable row level security;
@@ -329,13 +331,15 @@ grant usage on schema public to anon, authenticated;
 grant select on public.categories to anon, authenticated;
 grant select on public.products to anon, authenticated;
 grant select on public.product_images to anon, authenticated;
-grant insert on public.contact_requests to anon;
-grant insert on public.product_requests to anon;
-grant insert on public.product_request_items to anon;
+grant select on public.product_pack_options to anon, authenticated;
+grant insert on public.contact_requests to anon, authenticated;
+grant insert on public.product_requests to anon, authenticated;
+grant insert on public.product_request_items to anon, authenticated;
 grant select on public.admin_profiles to authenticated;
 grant select, insert, update, delete on public.categories to authenticated;
 grant select, insert, update, delete on public.products to authenticated;
 grant select, insert, update, delete on public.product_images to authenticated;
+grant select, insert, update, delete on public.product_pack_options to authenticated;
 grant select, update on public.contact_requests to authenticated;
 grant select, update on public.product_requests to authenticated;
 grant select, insert, update, delete on public.product_request_items to authenticated;
@@ -382,6 +386,25 @@ to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
 
+drop policy if exists "Public can read active product pack options" on public.product_pack_options;
+create policy "Public can read active product pack options"
+on public.product_pack_options for select
+using (
+    active = true
+    and exists (
+        select 1 from public.products
+        where products.id = product_pack_options.product_id
+          and products.active = true
+    )
+);
+
+drop policy if exists "Admins can manage product pack options" on public.product_pack_options;
+create policy "Admins can manage product pack options"
+on public.product_pack_options for all
+to authenticated
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
+
 drop policy if exists "Admins can read admin profiles" on public.admin_profiles;
 create policy "Admins can read admin profiles"
 on public.admin_profiles for select
@@ -398,7 +421,7 @@ with check (public.is_admin(auth.uid()));
 drop policy if exists "Public can create contact requests" on public.contact_requests;
 create policy "Public can create contact requests"
 on public.contact_requests for insert
-to anon
+to anon, authenticated
 with check (status = 'new');
 
 drop policy if exists "Admins can manage contact requests" on public.contact_requests;
@@ -411,7 +434,7 @@ with check (public.is_admin(auth.uid()));
 drop policy if exists "Public can create product requests" on public.product_requests;
 create policy "Public can create product requests"
 on public.product_requests for insert
-to anon
+to anon, authenticated
 with check (status = 'new');
 
 drop policy if exists "Admins can manage product requests" on public.product_requests;
@@ -424,7 +447,7 @@ with check (public.is_admin(auth.uid()));
 drop policy if exists "Public can create product request items" on public.product_request_items;
 create policy "Public can create product request items"
 on public.product_request_items for insert
-to anon
+to anon, authenticated
 with check (quantity between 1 and 999);
 
 drop policy if exists "Admins can manage product request items" on public.product_request_items;

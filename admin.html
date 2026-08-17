@@ -47,8 +47,14 @@
 
             <nav class="admin-tabs" aria-label="Разделы админ-панели">
                 <button class="active" type="button" data-admin-tab="products">Товары</button>
-                <button type="button" data-admin-tab="contacts">Заявки</button>
-                <button type="button" data-admin-tab="orders">Товарные заявки</button>
+                <button type="button" data-admin-tab="contacts">
+                    Заявки на созвон
+                    <span class="admin-tab-count" id="contactRequestsBadge" hidden>0</span>
+                </button>
+                <button type="button" data-admin-tab="orders">
+                    Заявки на товары
+                    <span class="admin-tab-count" id="productRequestsBadge" hidden>0</span>
+                </button>
             </nav>
 
             <p class="admin-message" id="adminGlobalMessage" aria-live="polite"></p>
@@ -57,7 +63,7 @@
                 <div class="admin-toolbar">
                     <label>
                         <span>Поиск</span>
-                        <input id="productSearch" type="search" placeholder="Название или slug">
+                        <input id="productSearch" type="search" placeholder="Название товара или ссылка">
                     </label>
                     <label>
                         <span>Категория</span>
@@ -76,38 +82,48 @@
                             <div>
                                 <p class="admin-eyebrow">Карточка товара</p>
                                 <h2 id="productFormTitle">Новый товар</h2>
+                                <p class="admin-editor-intro">Все поля ниже отображаются в каталоге и в подробном окне товара.</p>
                             </div>
                             <button class="admin-secondary" id="resetProductForm" type="button">Очистить</button>
                         </div>
 
                         <input name="id" type="hidden">
 
+                        <div class="admin-section-heading">
+                            <h3>Основные настройки</h3>
+                            <p>Сначала задайте адрес карточки, категорию и порядок показа.</p>
+                        </div>
+
                         <div class="admin-form-row">
                             <label>
-                                <span>Slug *</span>
-                                <input name="slug" type="text" required>
+                                <span>Ссылка товара (slug) *</span>
+                                <small>Только латинские буквы, цифры и дефисы. Например: black-pepper.</small>
+                                <input name="slug" type="text" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="black-pepper" required>
                             </label>
                             <label>
-                                <span>Категория *</span>
+                                <span>Раздел каталога *</span>
+                                <small>Определяет, в какой категории увидит товар посетитель.</small>
                                 <select name="category_id" required></select>
                             </label>
                         </div>
 
                         <div class="admin-form-row">
                             <label>
-                                <span>Порядок</span>
+                                <span>Порядок показа</span>
+                                <small>Меньшее число ставит товар выше в каталоге.</small>
                                 <input name="display_order" type="number" step="1" value="0">
                             </label>
                             <label>
-                                <span>Тон карточки</span>
+                                <span>Цвет заглушки без фото</span>
+                                <small>Используется, только если фотографии ещё не загружены.</small>
                                 <select name="tone">
-                                    <option value="pepper">pepper</option>
-                                    <option value="whole">whole</option>
-                                    <option value="mixes">mixes</option>
-                                    <option value="additives">additives</option>
-                                    <option value="citric">citric</option>
-                                    <option value="vegetables">vegetables</option>
-                                    <option value="soy">soy</option>
+                                    <option value="pepper">Красный перец</option>
+                                    <option value="whole">Тёмные специи</option>
+                                    <option value="mixes">Смеси и паприка</option>
+                                    <option value="additives">Пищевые добавки</option>
+                                    <option value="citric">Светлый / кислоты</option>
+                                    <option value="vegetables">Сушёные овощи</option>
+                                    <option value="soy">Белки</option>
                                 </select>
                             </label>
                         </div>
@@ -117,35 +133,106 @@
                             <span>Показывать товар на сайте</span>
                         </label>
 
+                        <div class="admin-section-heading">
+                            <h3>Тексты для каталога</h3>
+                            <p>Название видно на карточке. Короткий текст находится в каталоге, полный — в окне «Подробнее». Цена задаётся свободной строкой, например «от 120 грн/кг».</p>
+                        </div>
+                        <p class="admin-file-hint" id="priceFieldHint"></p>
+
                         <div class="admin-language-grid">
                             <fieldset>
                                 <legend>Українська</legend>
-                                <input name="name_uk" type="text" placeholder="Назва *" required>
-                                <textarea name="short_description_uk" rows="3" placeholder="Короткий опис"></textarea>
-                                <textarea name="description_uk" rows="4" placeholder="Повний опис"></textarea>
-                                <input name="pack_uk" type="text" placeholder="Фасування">
+                                <label>
+                                    <span>Назва товару</span>
+                                    <input name="name_uk" type="text" placeholder="Якщо порожньо, використається російська назва">
+                                </label>
+                                <label>
+                                    <span>Короткий опис для картки</span>
+                                    <textarea name="short_description_uk" rows="3" placeholder="1–2 речення про товар та його застосування"></textarea>
+                                </label>
+                                <label>
+                                    <span>Повний опис товару</span>
+                                    <textarea name="description_uk" rows="5" placeholder="Властивості, застосування, умови постачання"></textarea>
+                                </label>
+                                <label>
+                                    <span>Фасування та мінімальний обсяг</span>
+                                    <input name="pack_uk" type="text" placeholder="Наприклад: мішки 5 / 25 кг">
+                                </label>
+                                <label>
+                                    <span>Ціна або умова продажу</span>
+                                    <input name="price_uk" type="text" placeholder="Наприклад: від 120 грн/кг">
+                                </label>
                             </fieldset>
                             <fieldset>
                                 <legend>Русский</legend>
-                                <input name="name_ru" type="text" placeholder="Название *" required>
-                                <textarea name="short_description_ru" rows="3" placeholder="Короткое описание"></textarea>
-                                <textarea name="description_ru" rows="4" placeholder="Полное описание"></textarea>
-                                <input name="pack_ru" type="text" placeholder="Фасовка">
+                                <label>
+                                    <span>Название товара *</span>
+                                    <input name="name_ru" type="text" placeholder="Например: Перец чёрный молотый" required>
+                                </label>
+                                <label>
+                                    <span>Короткое описание для карточки</span>
+                                    <textarea name="short_description_ru" rows="3" placeholder="1–2 предложения о товаре и его применении"></textarea>
+                                </label>
+                                <label>
+                                    <span>Полное описание товара</span>
+                                    <textarea name="description_ru" rows="5" placeholder="Свойства, применение, условия поставки"></textarea>
+                                </label>
+                                <label>
+                                    <span>Фасовка и минимальный объём</span>
+                                    <input name="pack_ru" type="text" placeholder="Например: мешки 5 / 25 кг">
+                                </label>
+                                <label>
+                                    <span>Цена или условие продажи</span>
+                                    <input name="price_ru" type="text" placeholder="Например: от 120 грн/кг или цена по запросу">
+                                </label>
                             </fieldset>
                             <fieldset>
                                 <legend>English</legend>
-                                <input name="name_en" type="text" placeholder="Name *" required>
-                                <textarea name="short_description_en" rows="3" placeholder="Short description"></textarea>
-                                <textarea name="description_en" rows="4" placeholder="Full description"></textarea>
-                                <input name="pack_en" type="text" placeholder="Packing">
+                                <label>
+                                    <span>Product name</span>
+                                    <input name="name_en" type="text" placeholder="If empty, the Russian name will be used">
+                                </label>
+                                <label>
+                                    <span>Short card description</span>
+                                    <textarea name="short_description_en" rows="3" placeholder="One or two sentences about the product"></textarea>
+                                </label>
+                                <label>
+                                    <span>Full product description</span>
+                                    <textarea name="description_en" rows="5" placeholder="Properties, applications and supply terms"></textarea>
+                                </label>
+                                <label>
+                                    <span>Packing and minimum volume</span>
+                                    <input name="pack_en" type="text" placeholder="For example: 5 / 25 kg bags">
+                                </label>
+                                <label>
+                                    <span>Price or sales condition</span>
+                                    <input name="price_en" type="text" placeholder="For example: from 120 UAH/kg">
+                                </label>
                             </fieldset>
                         </div>
 
+                        <div class="admin-pack-options-box">
+                            <div class="admin-section-heading">
+                                <h3>Варианты объёма и фасовки</h3>
+                                <p>Добавляйте свободные варианты: «мешок 10 кг», «25 кг», «50 кг», «канистра 1 л», «20 л». Эти варианты появятся в окне товара и попадут в заявку клиента.</p>
+                            </div>
+                            <div class="admin-pack-options-head">
+                                <p class="admin-file-hint" id="packOptionsHint">Если вариантов нет, сайт покажет общий текст из поля «Фасовка и минимальный объём».</p>
+                                <button class="admin-secondary" id="addPackOptionButton" type="button">Добавить вариант</button>
+                            </div>
+                            <div class="admin-pack-options-list" id="packOptionsList"></div>
+                        </div>
+
                         <div class="admin-image-box">
+                            <div class="admin-section-heading">
+                                <h3>Фотографии товара</h3>
+                                <p>Можно выбрать сразу несколько JPG, PNG или WebP. После загрузки задайте главное фото и порядок галереи.</p>
+                            </div>
                             <label>
-                                <span>Загрузить основное фото</span>
-                                <input name="image" type="file" accept="image/png,image/jpeg,image/webp">
+                                <span>Добавить фотографии</span>
+                                <input name="image" type="file" accept="image/png,image/jpeg,image/webp" multiple>
                             </label>
+                            <p class="admin-file-hint" id="imageSelectionHint">Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.</p>
                             <div class="admin-images" id="productImages"></div>
                         </div>
 
@@ -160,7 +247,18 @@
             </section>
 
             <section class="admin-panel" data-admin-panel="contacts">
+                <div class="admin-panel-head">
+                    <div>
+                        <p class="admin-eyebrow">Связь с клиентами</p>
+                        <h2>Заявки на созвон и вопросы</h2>
+                    </div>
+                    <p>Здесь появляются формы из нижнего блока сайта «Свяжитесь с нами».</p>
+                </div>
                 <div class="admin-toolbar">
+                    <label>
+                        <span>Поиск обращения</span>
+                        <input type="search" data-request-search="contact" placeholder="Имя, телефон, почта или текст">
+                    </label>
                     <label>
                         <span>Статус</span>
                         <select data-request-filter="contact">
@@ -172,11 +270,23 @@
                     </label>
                     <button class="admin-secondary" data-refresh-requests="contact" type="button">Обновить</button>
                 </div>
+                <p class="admin-list-summary" id="contactRequestsSummary"></p>
                 <div class="request-list" id="contactRequestsList"></div>
             </section>
 
             <section class="admin-panel" data-admin-panel="orders">
+                <div class="admin-panel-head">
+                    <div>
+                        <p class="admin-eyebrow">Каталог</p>
+                        <h2>Заявки на товары</h2>
+                    </div>
+                    <p>Здесь появляются товары, которые клиент добавил в заявку или спросил через карточку товара.</p>
+                </div>
                 <div class="admin-toolbar">
+                    <label>
+                        <span>Поиск заявки</span>
+                        <input type="search" data-request-search="product" placeholder="Имя, телефон или товар">
+                    </label>
                     <label>
                         <span>Статус</span>
                         <select data-request-filter="product">
@@ -188,6 +298,7 @@
                     </label>
                     <button class="admin-secondary" data-refresh-requests="product" type="button">Обновить</button>
                 </div>
+                <p class="admin-list-summary" id="productRequestsSummary"></p>
                 <div class="request-list" id="productRequestsList"></div>
             </section>
         </section>

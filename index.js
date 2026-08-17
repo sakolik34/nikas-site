@@ -9,6 +9,7 @@ const contactSubmit = document.getElementById("contactSubmit");
 const contactFormMessage = document.getElementById("contactFormMessage");
 
 let contactSending = false;
+let contactSuccessTimer = null;
 
 function t(key, params) {
     return window.NikasI18n?.t(key, params) || key;
@@ -41,7 +42,7 @@ if (menuButton) {
     menuButton.addEventListener("click", () => {
         setMenuState(!sidebar.classList.contains("open"));
         setContactState(false);
-        window.NikasCart?.setOpen(false);
+        window.NikasRequest?.setOpen(false);
     });
 }
 
@@ -60,7 +61,7 @@ sidebarLinks.forEach((link) => {
 if (contactButton) {
     contactButton.addEventListener("click", (event) => {
         event.stopPropagation();
-        window.NikasCart?.setOpen(false);
+        window.NikasRequest?.setOpen(false);
         setContactState(!contactDropdown.classList.contains("open"));
     });
 }
@@ -88,6 +89,24 @@ function setFormMessage(text, type = "") {
     contactFormMessage.classList.toggle("success", type === "success");
 }
 
+function clearContactSuccessTimer() {
+    if (!contactSuccessTimer) {
+        return;
+    }
+
+    window.clearTimeout(contactSuccessTimer);
+    contactSuccessTimer = null;
+}
+
+function showContactSuccessMessage() {
+    clearContactSuccessTimer();
+    setFormMessage(t("form.success"), "success");
+    contactSuccessTimer = window.setTimeout(() => {
+        contactSuccessTimer = null;
+        updateContactSubmitState();
+    }, 7000);
+}
+
 function isContactFormReady() {
     if (!contactForm) {
         return false;
@@ -101,6 +120,11 @@ function isContactFormReady() {
 
 function updateContactSubmitState() {
     if (!contactForm || !contactSubmit) {
+        return;
+    }
+
+    if (contactSuccessTimer) {
+        contactSubmit.disabled = true;
         return;
     }
 
@@ -137,25 +161,40 @@ async function handleContactSubmit(event) {
     contactSubmit.disabled = true;
     setFormMessage(t("form.sending"));
 
+    let submitted = false;
+
     try {
         await window.NikasApi.submitContactRequest(contactFormValues());
         contactForm.reset();
-        setFormMessage(t("form.success"), "success");
+        submitted = true;
+        showContactSuccessMessage();
     } catch (error) {
+        clearContactSuccessTimer();
         setFormMessage(error?.message || t("form.error"), "error");
     } finally {
         contactSending = false;
-        updateContactSubmitState();
+        contactSubmit.disabled = true;
+
+        if (!submitted) {
+            updateContactSubmitState();
+        }
     }
 }
 
 if (contactForm) {
     updateContactSubmitState();
-    contactForm.addEventListener("input", updateContactSubmitState);
+    contactForm.addEventListener("input", () => {
+        clearContactSuccessTimer();
+        updateContactSubmitState();
+    });
     contactForm.addEventListener("submit", handleContactSubmit);
 }
 
 window.addEventListener("nikas:languagechange", () => {
     setMenuState(sidebar?.classList.contains("open"));
+    if (contactSuccessTimer) {
+        setFormMessage(t("form.success"), "success");
+        return;
+    }
     updateContactSubmitState();
 });

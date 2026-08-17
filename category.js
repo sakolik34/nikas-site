@@ -16,12 +16,20 @@ let pageState = {
     loading: true
 };
 
+let productModal = null;
+let activeProduct = null;
+let productModalReturnFocus = null;
+
 function t(key, paramsValue) {
     return window.NikasI18n?.t(key, paramsValue) || key;
 }
 
 function field(record, name) {
     return window.NikasI18n?.field(record, name) || "";
+}
+
+function localizedValue(value) {
+    return window.NikasI18n?.localizedValue(value) || "";
 }
 
 function productCountLabel(count) {
@@ -50,7 +58,15 @@ function findCategory() {
         };
     }
 
-    return pageState.categories.find((category) => category.id === selectedCategoryId || category.slug === selectedCategoryId);
+    return pageState.categories.find((category) => {
+        return category.id === selectedCategoryId || category.slug === selectedCategoryId;
+    });
+}
+
+function findProductCategory(product) {
+    return pageState.categories.find((category) => {
+        return category.id === product.categoryId || category.slug === product.categoryId;
+    });
 }
 
 function createTextElement(tag, className, text) {
@@ -75,10 +91,70 @@ function getProductId(product) {
     return product.id || `${product.categoryId}:${field(product, "name")}`;
 }
 
-function createProductVisual(product) {
+function productPackOptions(product) {
+    return Array.isArray(product.packOptions)
+        ? product.packOptions
+            .filter((packOption) => packOption.active !== false)
+            .sort((first, second) => (first.displayOrder || 0) - (second.displayOrder || 0))
+        : [];
+}
+
+function packOptionLabel(packOption) {
+    return localizedValue(packOption?.label) || "";
+}
+
+function packSummary(product) {
+    const options = productPackOptions(product)
+        .map(packOptionLabel)
+        .filter(Boolean);
+
+    if (options.length) {
+        return options.slice(0, 4).join(" / ");
+    }
+
+    return field(product, "pack");
+}
+
+function selectedPackOption() {
+    const checked = productModal?.querySelector("[data-product-pack-option]:checked");
+
+    if (!checked || !activeProduct) {
+        return null;
+    }
+
+    return productPackOptions(activeProduct).find((packOption) => String(packOption.id) === checked.value) || null;
+}
+
+function clampQuantity(value) {
+    return Math.max(1, Math.min(999, Math.floor(Number(value) || 1)));
+}
+
+function selectedProductQuantity() {
+    const input = productModal?.querySelector("[data-product-quantity]");
+    return clampQuantity(input?.value);
+}
+
+function requestProduct(product, packOption = null, quantity = 1) {
+    const selectedPack = packOptionLabel(packOption);
+    const productId = getProductId(product);
+
+    return {
+        id: packOption ? `${productId}:${packOption.id}` : productId,
+        productId,
+        slug: product.slug,
+        name: product.name,
+        pack: selectedPack || product.pack,
+        price: product.price,
+        shortDescription: product.shortDescription,
+        imageUrl: product.imageUrl,
+        categoryId: product.categoryId,
+        quantity: clampQuantity(quantity)
+    };
+}
+
+function createProductVisual(product, className = "") {
     const visual = document.createElement("div");
-    visual.className = `product-photo product-tone-${product.tone || "pepper"}`;
-    visual.setAttribute("aria-label", field(product, "name"));
+    visual.className = `product-photo product-tone-${product.tone || "pepper"} ${className}`.trim();
 
     if (product.imageUrl) {
         const image = document.createElement("img");
@@ -86,72 +162,383 @@ function createProductVisual(product) {
         image.alt = field(product, "name");
         image.loading = "lazy";
         visual.append(image);
+    } else {
+        const fallback = createTextElement("span", "product-photo-letter", field(product, "name").slice(0, 1));
+        fallback.setAttribute("aria-hidden", "true");
+        visual.append(fallback);
     }
 
     return visual;
 }
 
+function brieflyConfirm(button, messageKey, defaultKey) {
+    button.textContent = t(messageKey);
+    button.classList.add("confirmed");
+
+    window.setTimeout(() => {
+        button.textContent = t(defaultKey);
+        button.classList.remove("confirmed");
+    }, 1800);
+}
+
 function createProductCard(product) {
-    const productId = getProductId(product);
     const productName = field(product, "name");
-    const productPack = field(product, "pack");
+    const productPack = packSummary(product);
+    const hasPackOptions = productPackOptions(product).length > 0;
+    const category = findProductCategory(product);
 
     const card = document.createElement("article");
     card.className = "product-card";
 
+    const openButton = document.createElement("button");
+    openButton.className = "product-card-main";
+    openButton.type = "button";
+    openButton.setAttribute("aria-label", t("product.openDetails", { name: productName }));
+    openButton.addEventListener("click", () => openProductModal(product, openButton));
+
     const body = document.createElement("div");
     body.className = "product-card-body";
 
-    const meta = createTextElement("span", "product-meta", productPack || t("product.priceAvailability"));
+    const meta = createTextElement(
+        "span",
+        "product-meta",
+        category ? field(category, "shortTitle") || field(category, "title") : t("category.page.badge")
+    );
     const title = createTextElement("h3", "", productName);
-    const description = createTextElement("p", "", field(product, "shortDescription") || field(product, "description"));
+    const description = createTextElement(
+        "p",
+        "product-card-description",
+        field(product, "shortDescription") || field(product, "description")
+    );
 
     const details = document.createElement("div");
     details.className = "product-details";
-    details.append(
-        createTextElement("span", "", productPack),
-        createTextElement("strong", "", t("product.priceAvailability"))
-    );
+
+    const packing = document.createElement("span");
+    packing.innerHTML = `<b>${t("product.packLabel")}:</b> `;
+    packing.append(document.createTextNode(productPack || t("product.packOnRequest")));
+
+    const price = createTextElement("strong", "", field(product, "price") || t("product.priceAvailability"));
+    details.append(packing, price);
+
+    const detailsHint = createTextElement("span", "product-open-hint", t("product.details"));
+    body.append(meta, title, description, details, detailsHint);
+    openButton.append(createProductVisual(product), body);
 
     const actions = document.createElement("div");
     actions.className = "product-actions";
 
-    const orderButton = document.createElement("button");
-    orderButton.className = "mini-button primary-mini";
-    orderButton.type = "button";
-    orderButton.textContent = t("cart.add");
-    orderButton.addEventListener("click", (event) => {
-        event.stopPropagation();
-        window.NikasCart.addItem({
-            id: productId,
-            productId,
-            slug: product.slug,
-            name: product.name,
-            pack: product.pack,
-            categoryId: product.categoryId
-        });
+    const addButton = document.createElement("button");
+    addButton.className = "mini-button primary-mini";
+    addButton.type = "button";
+    addButton.textContent = t("cart.add");
+    addButton.addEventListener("click", () => {
+        if (hasPackOptions) {
+            openProductModal(product, addButton);
+            return;
+        }
 
-        orderButton.textContent = t("cart.added");
-        setTimeout(() => {
-            orderButton.textContent = t("cart.add");
-        }, 900);
+        window.NikasRequest?.addItem(requestProduct(product));
+        brieflyConfirm(addButton, "cart.added", "cart.add");
     });
 
-    const contactLink = document.createElement("a");
-    contactLink.className = "mini-button";
-    contactLink.href = "./index.html#contacts";
-    contactLink.textContent = t("cart.ask");
+    const askButton = document.createElement("button");
+    askButton.className = "mini-button";
+    askButton.type = "button";
+    askButton.textContent = t("cart.ask");
+    askButton.addEventListener("click", () => {
+        if (hasPackOptions) {
+            openProductModal(product, askButton);
+            return;
+        }
 
-    actions.append(orderButton, contactLink);
-    body.append(meta, title, description, details, actions);
-    card.append(createProductVisual(product), body);
+        window.NikasRequest?.askProduct(requestProduct(product), {
+            returnFocus: askButton
+        });
+    });
 
+    actions.append(addButton, askButton);
+    card.append(openButton, actions);
     return card;
+}
+
+function productImages(product) {
+    const images = Array.isArray(product.images)
+        ? product.images.filter((image) => image.imageUrl)
+        : [];
+
+    if (!images.length && product.imageUrl) {
+        return [{
+            id: `${getProductId(product)}-primary`,
+            imageUrl: product.imageUrl,
+            alt: product.name,
+            isPrimary: true
+        }];
+    }
+
+    return images;
+}
+
+function closeProductModal() {
+    if (!productModal || productModal.hidden) {
+        return;
+    }
+
+    productModal.hidden = true;
+    document.body.classList.remove("modal-open");
+    activeProduct = null;
+
+    if (productModalReturnFocus instanceof HTMLElement) {
+        productModalReturnFocus.focus();
+    }
+}
+
+function setMainProductImage(url, alt, activeId) {
+    const mainImage = productModal.querySelector("[data-product-main-image]");
+    mainImage.src = url;
+    mainImage.alt = alt;
+
+    productModal.querySelectorAll("[data-product-thumbnail]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.productThumbnail === activeId);
+    });
+}
+
+function renderProductModal(product) {
+    const panel = productModal.querySelector(".product-modal-panel");
+    const productName = field(product, "name");
+    const productPack = packSummary(product);
+    const packOptions = productPackOptions(product);
+    const images = productImages(product);
+
+    panel.replaceChildren();
+
+    const closeButton = createTextElement("button", "order-modal-close product-modal-close", "×");
+    closeButton.type = "button";
+    closeButton.setAttribute("aria-label", t("product.closeDetails"));
+    closeButton.addEventListener("click", closeProductModal);
+
+    const layout = document.createElement("div");
+    layout.className = "product-modal-layout";
+
+    const gallery = document.createElement("section");
+    gallery.className = "product-gallery";
+    gallery.setAttribute("aria-label", t("product.gallery"));
+
+    if (images.length) {
+        const mainFrame = document.createElement("div");
+        mainFrame.className = "product-gallery-main";
+        const mainImage = document.createElement("img");
+        const firstImage = images[0];
+        mainImage.dataset.productMainImage = "true";
+        mainImage.src = firstImage.imageUrl;
+        mainImage.alt = localizedValue(firstImage.alt) || productName;
+        mainFrame.append(mainImage);
+        gallery.append(mainFrame);
+
+        if (images.length > 1) {
+            const thumbnails = document.createElement("div");
+            thumbnails.className = "product-gallery-thumbnails";
+
+            images.forEach((image, index) => {
+                const imageId = String(image.id || index);
+                const alt = localizedValue(image.alt) || productName;
+                const button = document.createElement("button");
+                button.type = "button";
+                button.dataset.productThumbnail = imageId;
+                button.classList.toggle("active", index === 0);
+                button.setAttribute("aria-label", t("product.showImage", { number: index + 1 }));
+
+                const thumb = document.createElement("img");
+                thumb.src = image.imageUrl;
+                thumb.alt = "";
+                button.append(thumb);
+                button.addEventListener("click", () => {
+                    setMainProductImage(image.imageUrl, alt, imageId);
+                });
+                thumbnails.append(button);
+            });
+
+            gallery.append(thumbnails);
+        }
+    } else {
+        gallery.append(createProductVisual(product, "product-gallery-placeholder"));
+    }
+
+    const content = document.createElement("section");
+    content.className = "product-modal-content";
+
+    const category = findProductCategory(product);
+    const eyebrow = createTextElement(
+        "p",
+        "eyebrow",
+        category ? field(category, "title") : t("category.page.badge")
+    );
+    const title = createTextElement("h2", "", productName);
+    title.id = "productModalTitle";
+    const lead = createTextElement(
+        "p",
+        "product-modal-lead",
+        field(product, "shortDescription") || field(product, "description")
+    );
+
+    const facts = document.createElement("dl");
+    facts.className = "product-facts";
+    const packTerm = createTextElement("dt", "", t("product.packLabel"));
+    const packValue = createTextElement("dd", "", productPack || t("product.packOnRequest"));
+    const priceTerm = createTextElement("dt", "", t("product.priceLabel"));
+    const priceValue = createTextElement("dd", "", field(product, "price") || t("product.priceAvailability"));
+    facts.append(packTerm, packValue, priceTerm, priceValue);
+
+    let packChooser = null;
+
+    if (packOptions.length) {
+        packChooser = document.createElement("fieldset");
+        packChooser.className = "product-pack-options";
+
+        const legend = createTextElement("legend", "", t("product.packOptionsTitle"));
+        const hint = createTextElement("p", "", t("product.packOptionsHint"));
+        const choices = document.createElement("div");
+        choices.className = "product-pack-option-choices";
+
+        packOptions.forEach((packOption, index) => {
+            const label = document.createElement("label");
+            label.className = "product-pack-option";
+
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = `pack-option-${getProductId(product)}`;
+            input.value = String(packOption.id);
+            input.dataset.productPackOption = "true";
+            input.checked = index === 0;
+
+            const text = createTextElement("span", "", packOptionLabel(packOption));
+            label.append(input, text);
+            choices.append(label);
+        });
+
+        packChooser.append(legend, hint, choices);
+    }
+
+    const quantityBox = document.createElement("section");
+    quantityBox.className = "product-request-quantity";
+
+    const quantityTitle = createTextElement("h3", "", t("product.quantityTitle"));
+    const quantityHint = createTextElement("p", "", t("product.quantityHint"));
+
+    const quantityControls = document.createElement("div");
+    quantityControls.className = "product-quantity-controls";
+
+    const addOneButton = createTextElement("button", "button primary", t("product.quantityAddOne"));
+    addOneButton.type = "button";
+    addOneButton.addEventListener("click", () => {
+        window.NikasRequest?.addItem(requestProduct(product, selectedPackOption(), 1), { open: false });
+        brieflyConfirm(addOneButton, "cart.added", "product.quantityAddOne");
+    });
+
+    const customQuantity = document.createElement("label");
+    customQuantity.className = "product-quantity-custom";
+
+    const quantityLabel = createTextElement("span", "", t("product.quantityCustomLabel"));
+    const quantityInput = document.createElement("input");
+    quantityInput.type = "number";
+    quantityInput.inputMode = "numeric";
+    quantityInput.min = "1";
+    quantityInput.max = "999";
+    quantityInput.step = "1";
+    quantityInput.value = "1";
+    quantityInput.dataset.productQuantity = "true";
+    quantityInput.addEventListener("input", () => {
+        const cleanValue = quantityInput.value.replace(/[^\d]/g, "").slice(0, 3);
+        quantityInput.value = cleanValue;
+    });
+    quantityInput.addEventListener("blur", () => {
+        quantityInput.value = String(clampQuantity(quantityInput.value));
+    });
+
+    const addCustomButton = createTextElement("button", "button secondary", t("product.quantityAddCustom"));
+    addCustomButton.type = "button";
+    addCustomButton.addEventListener("click", () => {
+        window.NikasRequest?.addItem(
+            requestProduct(product, selectedPackOption(), selectedProductQuantity()),
+            { open: false }
+        );
+        brieflyConfirm(addCustomButton, "cart.added", "product.quantityAddCustom");
+    });
+
+    customQuantity.append(quantityLabel, quantityInput);
+    quantityControls.append(addOneButton, customQuantity, addCustomButton);
+    quantityBox.append(quantityTitle, quantityHint, quantityControls);
+
+    const descriptionTitle = createTextElement("h3", "", t("product.descriptionTitle"));
+    const description = createTextElement(
+        "p",
+        "product-modal-description",
+        field(product, "description") || field(product, "shortDescription") || t("product.descriptionMissing")
+    );
+
+    const actions = document.createElement("div");
+    actions.className = "product-modal-actions";
+
+    const askButton = createTextElement("button", "button secondary", t("cart.ask"));
+    askButton.type = "button";
+    askButton.addEventListener("click", () => {
+        const returnFocus = productModalReturnFocus;
+        const packOption = selectedPackOption();
+        const quantity = selectedProductQuantity();
+        closeProductModal();
+        window.NikasRequest?.askProduct(requestProduct(product, packOption, quantity), { returnFocus });
+    });
+
+    actions.append(askButton);
+    content.append(eyebrow, title, lead);
+
+    if (packChooser) {
+        content.append(packChooser);
+    }
+
+    content.append(quantityBox, facts, descriptionTitle, description, actions);
+    layout.append(gallery, content);
+    panel.append(closeButton, layout);
+}
+
+function createProductModal() {
+    if (productModal) {
+        return productModal;
+    }
+
+    productModal = document.createElement("div");
+    productModal.className = "product-modal";
+    productModal.hidden = true;
+    productModal.setAttribute("role", "dialog");
+    productModal.setAttribute("aria-modal", "true");
+    productModal.setAttribute("aria-labelledby", "productModalTitle");
+
+    const panel = document.createElement("div");
+    panel.className = "product-modal-panel";
+    productModal.append(panel);
+
+    productModal.addEventListener("mousedown", (event) => {
+        if (event.target === productModal) {
+            closeProductModal();
+        }
+    });
+
+    document.body.append(productModal);
+    return productModal;
+}
+
+function openProductModal(product, returnFocus) {
+    createProductModal();
+    activeProduct = product;
+    productModalReturnFocus = returnFocus || document.activeElement;
+    renderProductModal(product);
+    productModal.hidden = false;
+    document.body.classList.add("modal-open");
+    productModal.querySelector(".product-modal-close").focus();
 }
 
 function renderCategoryPage() {
     const category = findCategory();
-
     productGrid.replaceChildren();
 
     if (pageState.loading) {
@@ -181,9 +568,13 @@ function renderCategoryPage() {
     document.title = `${field(category, "title")} - Nikas`;
     categoryTitle.textContent = field(category, "title");
     categoryDescription.textContent = field(category, "description");
-    categoryBadge.textContent = selectedCategoryId === "all" ? t("category.page.allBadge") : t("category.page.sectionBadge");
+    categoryBadge.textContent = selectedCategoryId === "all"
+        ? t("category.page.allBadge")
+        : t("category.page.sectionBadge");
     productSectionTitle.textContent = field(category, "shortTitle") || field(category, "title");
-    productCount.textContent = pageState.error ? t("product.loadError") : productCountLabel(products.length);
+    productCount.textContent = pageState.error
+        ? t("product.loadError")
+        : productCountLabel(products.length);
     emptyState.hidden = products.length > 0;
     emptyState.textContent = pageState.error ? t("product.loadError") : t("product.empty");
 
@@ -223,5 +614,18 @@ async function loadCategoryPage() {
     renderCategoryPage();
 }
 
-window.addEventListener("nikas:languagechange", renderCategoryPage);
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        closeProductModal();
+    }
+});
+
+window.addEventListener("nikas:languagechange", () => {
+    renderCategoryPage();
+
+    if (activeProduct && productModal && !productModal.hidden) {
+        renderProductModal(activeProduct);
+    }
+});
+
 loadCategoryPage();

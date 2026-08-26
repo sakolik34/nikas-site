@@ -2,6 +2,12 @@
     const STORAGE_KEY = "nikas-language";
     const SUPPORTED_LANGUAGES = ["uk", "ru", "en"];
     const FALLBACK_LANGUAGE = "ru";
+    const SHORT_LANGUAGE_NAMES = {
+        uk: "Укр.",
+        ru: "Рус.",
+        en: "Eng."
+    };
+    const MOBILE_HEADER_QUERY = "(max-width: 640px)";
 
     const TRANSLATIONS = {
         uk: {
@@ -550,11 +556,21 @@
 
     function renderLanguageSwitchers() {
         document.querySelectorAll("[data-language-switcher]").forEach((container) => {
+            const isMobileHeaderSwitcher = container.closest(".site-header") && window.matchMedia(MOBILE_HEADER_QUERY).matches;
+
             if (container.dataset.languageReady === "true") {
                 const select = container.querySelector("select");
 
                 if (select && select.value !== currentLanguage) {
                     select.value = currentLanguage;
+                }
+
+                if (select) {
+                    [...select.options].forEach((option) => {
+                        option.textContent = isMobileHeaderSwitcher
+                            ? SHORT_LANGUAGE_NAMES[option.value]
+                            : t(`language.name.${option.value}`);
+                    });
                 }
 
                 return;
@@ -574,7 +590,7 @@
             SUPPORTED_LANGUAGES.forEach((language) => {
                 const option = document.createElement("option");
                 option.value = language;
-                option.textContent = t(`language.name.${language}`);
+                option.textContent = isMobileHeaderSwitcher ? SHORT_LANGUAGE_NAMES[language] : t(`language.name.${language}`);
                 select.append(option);
             });
 
@@ -585,6 +601,8 @@
             container.replaceChildren(label);
         });
     }
+
+    window.matchMedia(MOBILE_HEADER_QUERY).addEventListener("change", renderLanguageSwitchers);
 
     function createLanguagePrompt() {
         if (localStorage.getItem(STORAGE_KEY) || promptElement) {

@@ -28,6 +28,10 @@ body {
     overflow-x: clip;
 }
 
+body:has(.quick-action-bar) {
+    padding-bottom: 88px;
+}
+
 img {
     max-width: 100%;
     display: block;
@@ -1730,6 +1734,139 @@ h3 {
     font-weight: 900;
 }
 
+.quick-action-bar {
+    position: fixed;
+    right: 50%;
+    bottom: max(6px, env(safe-area-inset-bottom));
+    z-index: 80;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(92px, auto)) minmax(230px, auto);
+    gap: 8px;
+    align-items: center;
+    width: min(760px, calc(100vw - 32px));
+    padding: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 20px 60px rgba(5, 7, 5, 0.18);
+    backdrop-filter: blur(18px);
+    transform: translateX(50%);
+    animation: quickBarIn 0.58s cubic-bezier(0.18, 0.8, 0.2, 1) 0.2s both;
+}
+
+.quick-action {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 42px;
+    gap: 8px;
+    overflow: hidden;
+    padding: 0 12px;
+    border: 1px solid rgba(32, 32, 32, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-decoration: none;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.quick-action::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.65) 44%, transparent 72%);
+    opacity: 0;
+    transform: translateX(-120%);
+}
+
+.quick-action svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.quick-action:hover,
+.quick-action:focus-visible {
+    border-color: rgba(47, 107, 79, 0.32);
+    background: #ffffff;
+    color: var(--accent-dark);
+    transform: translateY(-2px);
+}
+
+.quick-action:hover::before,
+.quick-action:focus-visible::before {
+    animation: quickActionSheen 0.75s ease;
+}
+
+.quick-action:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.quick-action-download {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: #ffffff;
+}
+
+.quick-action-download:hover,
+.quick-action-download:focus-visible {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, #397c5c, var(--accent-dark));
+    color: #ffffff;
+}
+
+.quick-label-short {
+    display: none;
+}
+
+@keyframes quickBarIn {
+    from {
+        opacity: 0;
+        transform: translate(50%, 18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(50%, 0);
+    }
+}
+
+@keyframes quickActionSheen {
+    0% {
+        opacity: 0;
+        transform: translateX(-120%);
+    }
+
+    35% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(120%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .quick-action-bar,
+    .quick-action,
+    .quick-action::before {
+        animation: none;
+        transition: none;
+    }
+}
+
 @media (max-width: 900px) {
     .header-nav {
         display: none;
@@ -1800,6 +1937,46 @@ h3 {
         padding: 0 8px;
         font-size: 12px;
         text-align: center;
+    }
+
+    .quick-action-bar {
+        right: 12px;
+        bottom: max(10px, env(safe-area-inset-bottom));
+        left: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: auto;
+        padding: 7px;
+        border-color: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.94);
+        transform: none;
+        animation-name: quickMobileBarIn;
+    }
+
+    .quick-action {
+        min-height: 54px;
+        flex-direction: column;
+        gap: 5px;
+        padding: 7px 4px;
+        font-size: 11px;
+    }
+
+    .quick-action svg {
+        width: 21px;
+        height: 21px;
+        flex-basis: 21px;
+    }
+
+    .quick-action-download {
+        background: linear-gradient(135deg, #b84a37, #2f6b4f);
+    }
+
+    .quick-label-full {
+        display: none;
+    }
+
+    .quick-label-short {
+        display: inline;
     }
 
     .contact-button {
@@ -2005,6 +2182,18 @@ h3 {
 
     .site-header .language-select {
         width: 68px;
+    }
+}
+
+@keyframes quickMobileBarIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 

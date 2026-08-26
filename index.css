@@ -1859,27 +1859,33 @@ h3 {
         --hero-side-width: 28vw;
         top: 0;
         min-height: var(--hero-stage-height);
+        background:
+            linear-gradient(90deg, rgba(5, 7, 5, 0.08) 0%, rgba(5, 7, 5, 0.54) 46%, rgba(5, 7, 5, 0.78) 100%),
+            linear-gradient(180deg, rgba(5, 7, 5, 0.26) 0%, rgba(5, 7, 5, 0.08) 38%, rgba(5, 7, 5, 0.7) 100%),
+            url("./rightside.jpg") left center / cover no-repeat,
+            #050705;
+    }
+
+    .hero-sticky::before {
+        background:
+            radial-gradient(circle at 18% 18%, rgba(184, 74, 55, 0.28), transparent 30%),
+            radial-gradient(circle at 20% 86%, rgba(47, 107, 79, 0.26), transparent 34%),
+            linear-gradient(180deg, rgba(5, 7, 5, 0.1), rgba(5, 7, 5, 0.34));
+        opacity: 0.92;
+    }
+
+    .hero-shade {
+        background:
+            linear-gradient(90deg, rgba(5, 7, 5, 0.04) 0%, rgba(5, 7, 5, 0.46) 48%, rgba(5, 7, 5, 0.82) 100%),
+            linear-gradient(180deg, rgba(5, 7, 5, 0.18) 0%, rgba(5, 7, 5, 0.02) 42%, rgba(5, 7, 5, 0.72) 100%);
     }
 
     .hero-reveal {
-        padding: 62px 22px 78px;
+        padding: 58px 22px 82px;
     }
 
     .hero-side-image {
-        --hero-side-opacity: 0.24;
-        top: 50%;
-        width: var(--hero-side-width);
-        height: var(--hero-stage-height);
-        opacity: 0;
-        filter: saturate(0.98) contrast(1.03) brightness(0.7);
-    }
-
-    .hero-side-left {
-        left: 0;
-    }
-
-    .hero-side-right {
-        right: 0;
+        display: none;
     }
 
     h1 {

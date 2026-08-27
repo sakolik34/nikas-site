@@ -1734,6 +1734,30 @@ h3 {
     font-weight: 900;
 }
 
+.footer-legal {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.footer-company,
+.footer-copyright {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+.footer-company {
+    color: var(--text);
+    letter-spacing: 0.02em;
+}
+
 .quick-action-bar {
     position: fixed;
     right: 50%;
@@ -1878,6 +1902,11 @@ h3 {
 
     .site-footer {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .footer-legal {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .hero {
@@ -2122,6 +2151,10 @@ h3 {
     .site-footer {
         grid-template-columns: 1fr;
         padding: 42px 22px;
+    }
+
+    .footer-legal {
+        gap: 10px;
     }
 
     .footer-contact-item {

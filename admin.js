@@ -7,6 +7,7 @@ const adminLogout = document.getElementById("adminLogout");
 const productsList = document.getElementById("productsList");
 const productForm = document.getElementById("productForm");
 const productFormTitle = document.getElementById("productFormTitle");
+const productFormMode = document.getElementById("productFormMode");
 const productFormMessage = document.getElementById("productFormMessage");
 const productSearch = document.getElementById("productSearch");
 const productCategoryFilter = document.getElementById("productCategoryFilter");
@@ -64,6 +65,17 @@ function setMessage(element, text, type = "") {
     element.textContent = text;
     element.classList.toggle("error", type === "error");
     element.classList.toggle("success", type === "success");
+}
+
+function setProductFormMode(mode) {
+    const isCreating = mode === "create";
+
+    productForm.dataset.mode = mode;
+    productFormMode.textContent = isCreating ? "Создание нового товара" : "Редактирование товара";
+    productFormTitle.textContent = isCreating ? "Новый товар" : productFormTitle.textContent;
+    resetProductForm.textContent = isCreating ? "Очистить форму" : "Создать новый товар";
+    saveProductButton.textContent = isCreating ? "Создать товар" : "Сохранить изменения";
+    deactivateProductButton.hidden = isCreating;
 }
 
 function localField(record, field) {
@@ -729,9 +741,10 @@ async function saveProductPackOptions(productId) {
 function resetForm() {
     selectedProductId = "";
     productForm.reset();
+    productForm.elements.id.value = "";
     productForm.elements.active.checked = true;
     productForm.elements.display_order.value = "0";
-    productFormTitle.textContent = "Новый товар";
+    setProductFormMode("create");
     renderPackOptions();
     productImages.replaceChildren();
     imageSelectionHint.textContent = "Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.";
@@ -788,8 +801,20 @@ async function renderProductImages(productId) {
         row.className = "admin-image-row";
 
         const img = document.createElement("img");
-        img.src = window.NikasApi.resolveProductImageUrl(image);
+        const imageUrl = window.NikasApi.resolveProductImageUrl(image);
+        img.src = imageUrl;
         img.alt = image.alt_ru || "Фото товара";
+        img.loading = "lazy";
+        img.addEventListener("error", () => {
+            if (img.dataset.retried === "true" || !imageUrl) {
+                return;
+            }
+
+            const retryUrl = new URL(imageUrl);
+            retryUrl.searchParams.set("retry", Date.now().toString());
+            img.dataset.retried = "true";
+            img.src = retryUrl.toString();
+        });
 
         const info = document.createElement("div");
         info.className = "admin-image-info";
@@ -882,6 +907,7 @@ async function fillProductForm(productId) {
     }
 
     selectedProductId = productId;
+    setProductFormMode("edit");
     productFormTitle.textContent = localField(product, "name") || product.slug;
     productForm.elements.id.value = product.id;
     productForm.elements.slug.value = product.slug;
@@ -1007,7 +1033,7 @@ async function saveProduct(event) {
 
     try {
         const payload = productPayload();
-        const productId = productForm.elements.id.value;
+        const productId = String(productForm.elements.id.value || "").trim();
         let savedProductId = productId;
         let response;
 

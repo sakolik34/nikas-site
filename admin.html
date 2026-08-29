@@ -80,11 +80,11 @@
                     <form class="admin-editor" id="productForm" novalidate>
                         <div class="admin-editor-head">
                             <div>
-                                <p class="admin-eyebrow">Карточка товара</p>
+                                <p class="admin-eyebrow" id="productFormMode">Создание нового товара</p>
                                 <h2 id="productFormTitle">Новый товар</h2>
                                 <p class="admin-editor-intro">Все поля ниже отображаются в каталоге и в подробном окне товара.</p>
                             </div>
-                            <button class="admin-secondary" id="resetProductForm" type="button">Очистить</button>
+                            <button class="admin-secondary" id="resetProductForm" type="button">Создать новый товар</button>
                         </div>
 
                         <input name="id" type="hidden">
@@ -240,7 +240,7 @@
                         <p class="admin-message" id="productFormMessage" aria-live="polite"></p>
 
                         <div class="admin-editor-actions">
-                            <button class="admin-primary" id="saveProductButton" type="submit">Сохранить товар</button>
+                            <button class="admin-primary" id="saveProductButton" type="submit">Создать товар</button>
                             <button class="admin-danger" id="deactivateProductButton" type="button">Скрыть товар</button>
                         </div>
                     </form>

@@ -116,7 +116,7 @@
         return supabaseClient.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl || "";
     }
 
-    function mediaImageUrl(objectKey) {
+    function mediaImageUrl(objectKey, version = "") {
         const baseUrl = String(getConfig().mediaBaseUrl || "").replace(/\/+$/, "");
         const safeKey = String(objectKey || "").replace(/^\/+/, "");
 
@@ -124,7 +124,8 @@
             return "";
         }
 
-        return `${baseUrl}/${safeKey.split("/").map(encodeURIComponent).join("/")}`;
+        const url = `${baseUrl}/${safeKey.split("/").map(encodeURIComponent).join("/")}`;
+        return version ? `${url}?v=${encodeURIComponent(version)}` : url;
     }
 
     function resolveProductImageUrl(image = {}) {
@@ -133,7 +134,7 @@
         const storagePath = image.storage_path || image.storagePath || "";
 
         if (objectKey && (storageProvider === "r2" || !storageProvider)) {
-            return mediaImageUrl(objectKey);
+            return mediaImageUrl(objectKey, image.updated_at || image.updatedAt || image.created_at || image.createdAt || image.id);
         }
 
         if (image.imageUrl || image.url) {

@@ -459,6 +459,39 @@ fieldset {
     border-radius: 6px;
 }
 
+.admin-image-info {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.admin-image-info p {
+    overflow: hidden;
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-image-provider {
+    width: fit-content;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.admin-image-provider.cloudflare {
+    background: rgba(47, 107, 79, 0.12);
+    color: var(--accent);
+}
+
+.admin-image-provider.legacy {
+    background: rgba(184, 74, 55, 0.1);
+    color: var(--danger);
+}
+
 .request-items {
     display: grid;
     gap: 6px;

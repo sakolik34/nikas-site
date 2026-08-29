@@ -116,6 +116,33 @@
         return supabaseClient.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl || "";
     }
 
+    function mediaImageUrl(objectKey) {
+        const baseUrl = String(getConfig().mediaBaseUrl || "").replace(/\/+$/, "");
+        const safeKey = String(objectKey || "").replace(/^\/+/, "");
+
+        if (!baseUrl || !safeKey) {
+            return "";
+        }
+
+        return `${baseUrl}/${safeKey.split("/").map(encodeURIComponent).join("/")}`;
+    }
+
+    function resolveProductImageUrl(image = {}) {
+        const objectKey = image.object_key || image.objectKey || "";
+        const storageProvider = image.storage_provider || image.storageProvider || "";
+        const storagePath = image.storage_path || image.storagePath || "";
+
+        if (objectKey && (storageProvider === "r2" || !storageProvider)) {
+            return mediaImageUrl(objectKey);
+        }
+
+        if (image.imageUrl || image.url) {
+            return image.imageUrl || image.url;
+        }
+
+        return publicImageUrl(storagePath);
+    }
+
     function sortImages(images = []) {
         return [...images].sort((first, second) => {
             if (first.is_primary !== second.is_primary) {
@@ -143,11 +170,15 @@
 
         return sortImages(rawImages).map((image, index) => {
             const storagePath = image.storage_path || image.storagePath || "";
+            const objectKey = image.object_key || image.objectKey || "";
+            const storageProvider = image.storage_provider || image.storageProvider || (objectKey ? "r2" : "supabase");
             return {
                 ...image,
                 id: image.id || `${product.id || product.slug}-image-${index}`,
                 storagePath,
-                imageUrl: image.imageUrl || image.url || publicImageUrl(storagePath),
+                objectKey,
+                storageProvider,
+                imageUrl: resolveProductImageUrl({ ...image, storagePath, objectKey, storageProvider }),
                 isPrimary: image.is_primary ?? image.isPrimary ?? index === 0,
                 displayOrder: image.display_order ?? image.displayOrder ?? index,
                 alt: image.alt || {
@@ -184,7 +215,7 @@
     function toCamelProduct(product) {
         const images = normalizeProductImages(product);
         const primaryImage = images.find((image) => image.isPrimary) || images[0] || null;
-        const imagePath = primaryImage?.storagePath || product.primaryImagePath || product.image_path || "";
+        const imagePath = primaryImage?.objectKey || primaryImage?.storagePath || product.primaryImagePath || product.image_path || "";
         const packOptions = normalizeProductPackOptions(product);
 
         return {
@@ -329,34 +360,6 @@
         return `${prefix}-${randomPart}`;
     }
 
-    function createUuid() {
-        if (crypto?.randomUUID) {
-            return crypto.randomUUID();
-        }
-
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
-            const random = Math.random() * 16 | 0;
-            const value = character === "x" ? random : (random & 0x3 | 0x8);
-            return value.toString(16);
-        });
-    }
-
-    function isUuid(value) {
-        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
-    }
-
-    function isMissingRequestSnapshotColumn(error) {
-        const message = String(error?.message || "").toLowerCase();
-        return message.includes("pack_snapshot") || message.includes("price_snapshot");
-    }
-
-    function isAccessPolicyError(error) {
-        const message = String(error?.message || "").toLowerCase();
-        return error?.code === "42501"
-            || message.includes("row-level security")
-            || message.includes("permission denied");
-    }
-
     async function invokeFunction(name, payload) {
         const supabaseClient = await getClientAsync();
 
@@ -446,167 +449,16 @@
         };
     }
 
-    function directContactRow(payload) {
-        return {
-            id: createUuid(),
-            name: String(payload.name || "").trim(),
-            phone: String(payload.phone || "").trim(),
-            email: String(payload.email || "").trim() || null,
-            message: String(payload.message || "").trim() || null,
-            language: payload.language,
-            source_path: payload.sourcePath,
-            idempotency_key: payload.idempotencyKey,
-            status: "new",
-            telegram_status: "skipped",
-            telegram_error: "Saved directly because the Telegram Edge Function is not available yet."
-        };
-    }
-
-    async function submitContactDirect(payload) {
-        if (payload.website) {
-            return { ok: true, skipped: true };
-        }
-
-        const supabaseClient = await getClientAsync();
-
-        if (!supabaseClient) {
-            throw new Error(window.NikasI18n?.t("errors.backendNotConfigured") || "Supabase is not configured.");
-        }
-
-        const row = directContactRow(payload);
-        const { error } = await supabaseClient.from("contact_requests").insert(row);
-
-        if (error && error.code !== "23505") {
-            throw error;
-        }
-
-        return {
-            ok: true,
-            requestId: row.id,
-            duplicate: error?.code === "23505",
-            telegramDelivered: false,
-            savedDirectly: true
-        };
-    }
-
-    async function submitProductDirect(payload) {
-        if (payload.website) {
-            return { ok: true, skipped: true };
-        }
-
-        const supabaseClient = await getClientAsync();
-
-        if (!supabaseClient) {
-            throw new Error(window.NikasI18n?.t("errors.backendNotConfigured") || "Supabase is not configured.");
-        }
-
-        if (!payload.items.length) {
-            throw new Error(window.NikasI18n?.t("cart.empty") || "Product list is empty.");
-        }
-
-        const requestId = createUuid();
-        const requestRow = {
-            id: requestId,
-            name: String(payload.name || "").trim(),
-            phone: String(payload.phone || "").trim(),
-            email: String(payload.email || "").trim() || null,
-            comment: String(payload.comment || "").trim() || null,
-            language: payload.language,
-            source_path: payload.sourcePath,
-            idempotency_key: payload.idempotencyKey,
-            status: "new",
-            telegram_status: "skipped",
-            telegram_error: "Saved directly because the Telegram Edge Function is not available yet."
-        };
-
-        const requestInsert = await supabaseClient.from("product_requests").insert(requestRow);
-
-        if (requestInsert.error?.code === "23505") {
-            return {
-                ok: true,
-                duplicate: true,
-                telegramDelivered: false,
-                savedDirectly: true
-            };
-        }
-
-        if (requestInsert.error) {
-            if (isAccessPolicyError(requestInsert.error)) {
-                throw new Error("Supabase пока не пропускает товарную заявку. Выполните свежий supabase/schema.sql в SQL Editor и попробуйте снова.");
-            }
-
-            throw requestInsert.error;
-        }
-
-        const itemRows = payload.items.map((item, index) => ({
-            request_id: requestId,
-            product_id: isUuid(item.productId) ? item.productId : null,
-            product_slug: String(item.productSlug || "").trim() || null,
-            category_id: String(item.categoryId || "").trim() || null,
-            product_name_snapshot: String(item.name || "").trim(),
-            pack_snapshot: String(item.pack || "").trim() || null,
-            price_snapshot: String(item.price || "").trim() || null,
-            quantity: clampQuantity(item.quantity),
-            display_order: Number.isFinite(Number(item.displayOrder)) ? Number(item.displayOrder) : index
-        }));
-
-        let itemsInsert = await supabaseClient.from("product_request_items").insert(itemRows);
-
-        if (itemsInsert.error && isMissingRequestSnapshotColumn(itemsInsert.error)) {
-            const legacyRows = itemRows.map(({ pack_snapshot, price_snapshot, ...item }) => item);
-            itemsInsert = await supabaseClient.from("product_request_items").insert(legacyRows);
-        }
-
-        if (itemsInsert.error) {
-            if (isAccessPolicyError(itemsInsert.error)) {
-                throw new Error("Заявка создана, но Supabase не пропускает товары внутри заявки. Выполните свежий supabase/schema.sql в SQL Editor и попробуйте снова.");
-            }
-
-            throw new Error(`Заявка сохранена, но товары не добавились: ${itemsInsert.error.message}`);
-        }
-
-        return {
-            ok: true,
-            requestId,
-            telegramDelivered: false,
-            savedDirectly: true
-        };
-    }
-
-    async function submitWithFallback(functionName, payload, directSubmit) {
-        try {
-            return await invokeFunction(functionName, payload);
-        } catch (functionError) {
-            try {
-                return await directSubmit(payload);
-            } catch (databaseError) {
-                const message = databaseError?.message
-                    || functionError?.message
-                    || window.NikasI18n?.t("form.error")
-                    || "Could not save the request.";
-                throw new Error(message);
-            }
-        }
-    }
-
     async function submitContactRequest(formValues) {
         const config = getConfig();
         const payload = prepareContactPayload(formValues);
-        return submitWithFallback(
-            config.edgeFunctions?.submitContact || "submit-contact",
-            payload,
-            submitContactDirect
-        );
+        return invokeFunction(config.edgeFunctions?.submitContact || "submit-contact", payload);
     }
 
     async function submitProductRequest(formValues) {
         const config = getConfig();
         const payload = prepareProductRequestPayload(formValues);
-        return submitWithFallback(
-            config.edgeFunctions?.submitProductRequest || "submit-product-request",
-            payload,
-            submitProductDirect
-        );
+        return invokeFunction(config.edgeFunctions?.submitProductRequest || "submit-product-request", payload);
     }
 
     window.NikasApi = {
@@ -619,6 +471,8 @@
         submitProductRequest,
         createIdempotencyKey,
         normalizeCategory: toCamelCategory,
-        normalizeProduct: toCamelProduct
+        normalizeProduct: toCamelProduct,
+        mediaImageUrl,
+        resolveProductImageUrl
     };
 })();

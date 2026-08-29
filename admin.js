@@ -16,6 +16,7 @@ const saveProductButton = document.getElementById("saveProductButton");
 const deactivateProductButton = document.getElementById("deactivateProductButton");
 const productImages = document.getElementById("productImages");
 const imageSelectionHint = document.getElementById("imageSelectionHint");
+const imageStorageStatus = document.getElementById("imageStorageStatus");
 const priceFieldHint = document.getElementById("priceFieldHint");
 const packOptionsList = document.getElementById("packOptionsList");
 const addPackOptionButton = document.getElementById("addPackOptionButton");
@@ -38,6 +39,7 @@ let savingProduct = false;
 let supportsPriceFields = false;
 let supportsRequestItemSnapshots = false;
 let supportsPackOptions = false;
+let supportsR2Images = false;
 
 function withTimeout(promise, ms, message) {
     let timeoutId;
@@ -103,6 +105,64 @@ async function verifyAdmin(user) {
     }
 
     return data?.is_admin === true;
+}
+
+function mediaApiBaseUrl() {
+    return String(window.NIKAS_SUPABASE_CONFIG?.mediaApiBaseUrl || "").replace(/\/+$/, "");
+}
+
+async function currentAccessToken() {
+    const { data, error } = await supabaseAdmin.auth.getSession();
+
+    if (error) {
+        throw error;
+    }
+
+    if (!data.session?.access_token) {
+        throw new Error("Сеанс администратора закончился. Войдите заново.");
+    }
+
+    return data.session.access_token;
+}
+
+async function mediaApiRequest(path, options = {}) {
+    const baseUrl = mediaApiBaseUrl();
+
+    if (!baseUrl) {
+        throw new Error("Адрес Cloudflare Image API не указан в supabase-config.js.");
+    }
+
+    const token = await currentAccessToken();
+    const headers = new Headers(options.headers || {});
+    headers.set("authorization", `Bearer ${token}`);
+    let response;
+
+    try {
+        response = await withTimeout(
+            fetch(`${baseUrl}${path}`, { ...options, headers }),
+            45000,
+            "Cloudflare слишком долго загружает фотографию. Попробуйте ещё раз."
+        );
+    } catch (error) {
+        if (error?.message?.includes("Cloudflare")) {
+            throw error;
+        }
+        throw new Error("Не удалось связаться с Cloudflare Image API. Проверьте Worker и интернет.");
+    }
+
+    let payload = null;
+
+    try {
+        payload = await response.json();
+    } catch {
+        // A non-JSON response is handled by the generic status error below.
+    }
+
+    if (!response.ok) {
+        throw new Error(payload?.error || `Cloudflare Image API вернул ошибку ${response.status}.`);
+    }
+
+    return payload;
 }
 
 async function initAdmin() {
@@ -314,12 +374,14 @@ async function loadAdminData() {
         categoriesResult,
         priceProbeResult,
         requestItemSnapshotProbeResult,
-        packOptionsProbeResult
+        packOptionsProbeResult,
+        r2ImagesProbeResult
     ] = await Promise.all([
         supabaseAdmin.from("categories").select("*").order("display_order", { ascending: true }),
         supabaseAdmin.from("products").select("price_ru").limit(1),
         supabaseAdmin.from("product_request_items").select("pack_snapshot, price_snapshot").limit(1),
-        supabaseAdmin.from("product_pack_options").select("id").limit(1)
+        supabaseAdmin.from("product_pack_options").select("id").limit(1),
+        supabaseAdmin.from("product_images").select("storage_provider, object_key").limit(1)
     ]);
 
     if (categoriesResult.error) {
@@ -329,6 +391,7 @@ async function loadAdminData() {
     supportsPriceFields = !priceProbeResult.error;
     supportsRequestItemSnapshots = !requestItemSnapshotProbeResult.error;
     supportsPackOptions = !packOptionsProbeResult.error;
+    supportsR2Images = !r2ImagesProbeResult.error;
 
     const [productsResult, packOptionsResult] = await Promise.all([
         supabaseAdmin.from("products").select("*, images:product_images(*)").order("display_order", { ascending: true }),
@@ -353,10 +416,31 @@ async function loadAdminData() {
         .map(window.NikasApi.normalizeProduct);
     configurePriceFields();
     configurePackOptions();
+    configureImageStorage();
     populateCategoryControls();
     renderProducts();
     await Promise.all([loadContactRequests(), loadProductRequests()]);
     setMessage(adminGlobalMessage, "Данные загружены.", "success");
+}
+
+function configureImageStorage() {
+    const configured = Boolean(mediaApiBaseUrl());
+    const ready = supportsR2Images && configured;
+
+    productForm.elements.image.disabled = !ready;
+    imageStorageStatus.classList.toggle("admin-warning", !ready);
+
+    if (!supportsR2Images) {
+        imageStorageStatus.textContent = "Сначала выполните SQL-файл supabase/migrations/20260826_cloudflare_r2_product_images.sql. Старые фото остаются доступными.";
+        return;
+    }
+
+    if (!configured) {
+        imageStorageStatus.textContent = "В supabase-config.js не указан адрес Cloudflare Image API.";
+        return;
+    }
+
+    imageStorageStatus.textContent = "Новые фотографии будут храниться в Cloudflare R2. Секретные ключи не передаются в браузер.";
 }
 
 function createBadge(text, type = "") {
@@ -704,18 +788,19 @@ async function renderProductImages(productId) {
         row.className = "admin-image-row";
 
         const img = document.createElement("img");
-        img.src = supabaseAdmin.storage
-            .from(window.NIKAS_SUPABASE_CONFIG.productImagesBucket || "product-images")
-            .getPublicUrl(image.storage_path).data.publicUrl;
+        img.src = window.NikasApi.resolveProductImageUrl(image);
         img.alt = image.alt_ru || "Фото товара";
 
         const info = document.createElement("div");
         info.className = "admin-image-info";
         const title = document.createElement("strong");
         title.textContent = image.is_primary ? "Главное фото" : `Фото ${index + 1}`;
+        const provider = document.createElement("span");
+        provider.className = `admin-image-provider ${image.storage_provider === "r2" ? "cloudflare" : "legacy"}`;
+        provider.textContent = image.storage_provider === "r2" ? "Cloudflare R2" : "Supabase (старое)";
         const path = document.createElement("p");
-        path.textContent = image.storage_path.split("/").pop();
-        info.append(title, path);
+        path.textContent = (image.object_key || image.storage_path || "").split("/").pop();
+        info.append(title, provider, path);
 
         const orderControls = document.createElement("div");
         orderControls.className = "admin-image-order";
@@ -851,15 +936,15 @@ function productPayload() {
     return payload;
 }
 
-function safeFileName(fileName) {
-    return fileName.toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").replace(/-+/g, "-");
-}
-
 async function uploadProductImages(productId) {
     const files = [...(productForm.elements.image.files || [])];
 
     if (!files.length) {
         return;
+    }
+
+    if (!supportsR2Images) {
+        throw new Error("Сначала выполните SQL-миграцию Cloudflare R2 в Supabase.");
     }
 
     if (files.length > 10) {
@@ -889,38 +974,19 @@ async function uploadProductImages(productId) {
         throw new Error("Для одного товара можно хранить не больше 10 фотографий.");
     }
 
-    const bucket = window.NIKAS_SUPABASE_CONFIG.productImagesBucket || "product-images";
-    const hasPrimary = existing.data?.some((image) => image.is_primary) || false;
-    const maxOrder = Math.max(-1, ...(existing.data || []).map((image) => image.display_order || 0));
-
     for (const [index, file] of files.entries()) {
         setMessage(productFormMessage, `Загружаем фото ${index + 1} из ${files.length}...`);
-        const storagePath = `${productId}/${Date.now()}-${index}-${safeFileName(file.name)}`;
-        const upload = await supabaseAdmin.storage.from(bucket).upload(storagePath, file, {
-            cacheControl: "3600",
-            upsert: false
+        const body = new FormData();
+        body.append("productId", productId);
+        body.append("file", file);
+        body.append("altUk", productForm.elements.name_uk.value.trim() || productForm.elements.name_ru.value.trim());
+        body.append("altRu", productForm.elements.name_ru.value.trim());
+        body.append("altEn", productForm.elements.name_en.value.trim() || productForm.elements.name_ru.value.trim());
+
+        await mediaApiRequest("/api/admin/images/upload", {
+            method: "POST",
+            body
         });
-
-        if (upload.error) {
-            throw upload.error;
-        }
-
-        const insert = await supabaseAdmin
-            .from("product_images")
-            .insert({
-                product_id: productId,
-                storage_path: storagePath,
-                is_primary: !hasPrimary && index === 0,
-                display_order: maxOrder + index + 1,
-                alt_uk: productForm.elements.name_uk.value.trim() || productForm.elements.name_ru.value.trim(),
-                alt_ru: productForm.elements.name_ru.value.trim(),
-                alt_en: productForm.elements.name_en.value.trim() || productForm.elements.name_ru.value.trim()
-            });
-
-        if (insert.error) {
-            await supabaseAdmin.storage.from(bucket).remove([storagePath]);
-            throw insert.error;
-        }
     }
 
     productForm.elements.image.value = "";
@@ -1045,19 +1111,32 @@ async function deleteProductImage(productId, image) {
         return;
     }
 
-    const bucket = window.NIKAS_SUPABASE_CONFIG.productImagesBucket || "product-images";
-    const storage = await supabaseAdmin.storage.from(bucket).remove([image.storage_path]);
+    if (image.storage_provider === "r2" && image.object_key) {
+        try {
+            await mediaApiRequest("/api/admin/images", {
+                method: "DELETE",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ imageId: image.id, productId })
+            });
+        } catch (error) {
+            setMessage(productFormMessage, error?.message || "Не удалось удалить фотографию из Cloudflare.", "error");
+            return;
+        }
+    } else {
+        const bucket = window.NIKAS_SUPABASE_CONFIG.productImagesBucket || "product-images";
+        const storage = await supabaseAdmin.storage.from(bucket).remove([image.storage_path]);
 
-    if (storage.error) {
-        setMessage(productFormMessage, storage.error.message, "error");
-        return;
-    }
+        if (storage.error) {
+            setMessage(productFormMessage, storage.error.message, "error");
+            return;
+        }
 
-    const { error } = await supabaseAdmin.from("product_images").delete().eq("id", image.id);
+        const { error } = await supabaseAdmin.from("product_images").delete().eq("id", image.id);
 
-    if (error) {
-        setMessage(productFormMessage, error.message, "error");
-        return;
+        if (error) {
+            setMessage(productFormMessage, error.message, "error");
+            return;
+        }
     }
 
     if (image.is_primary) {

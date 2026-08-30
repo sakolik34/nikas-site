@@ -84,7 +84,6 @@
         return {
             id: category.id || category.slug,
             slug: category.slug || category.id,
-            tone: category.tone || "pepper",
             active: category.active !== false,
             displayOrder: category.display_order ?? category.displayOrder ?? 0,
             title: category.title || {
@@ -105,17 +104,6 @@
         };
     }
 
-    function publicImageUrl(storagePath) {
-        const supabaseClient = getClient();
-        const bucket = getConfig().productImagesBucket || "product-images";
-
-        if (!supabaseClient || !storagePath) {
-            return "";
-        }
-
-        return supabaseClient.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl || "";
-    }
-
     function mediaImageUrl(objectKey, version = "") {
         const baseUrl = String(getConfig().mediaBaseUrl || "").replace(/\/+$/, "");
         const safeKey = String(objectKey || "").replace(/^\/+/, "");
@@ -131,7 +119,6 @@
     function resolveProductImageUrl(image = {}) {
         const objectKey = image.object_key || image.objectKey || "";
         const storageProvider = image.storage_provider || image.storageProvider || "";
-        const storagePath = image.storage_path || image.storagePath || "";
 
         if (objectKey && (storageProvider === "r2" || !storageProvider)) {
             return mediaImageUrl(objectKey, image.updated_at || image.updatedAt || image.created_at || image.createdAt || image.id);
@@ -141,7 +128,7 @@
             return image.imageUrl || image.url;
         }
 
-        return publicImageUrl(storagePath);
+        return "";
     }
 
     function sortImages(images = []) {
@@ -170,16 +157,13 @@
         }
 
         return sortImages(rawImages).map((image, index) => {
-            const storagePath = image.storage_path || image.storagePath || "";
             const objectKey = image.object_key || image.objectKey || "";
-            const storageProvider = image.storage_provider || image.storageProvider || (objectKey ? "r2" : "supabase");
             return {
                 ...image,
                 id: image.id || `${product.id || product.slug}-image-${index}`,
-                storagePath,
                 objectKey,
-                storageProvider,
-                imageUrl: resolveProductImageUrl({ ...image, storagePath, objectKey, storageProvider }),
+                storageProvider: "r2",
+                imageUrl: resolveProductImageUrl({ ...image, objectKey, storageProvider: "r2" }),
                 isPrimary: image.is_primary ?? image.isPrimary ?? index === 0,
                 displayOrder: image.display_order ?? image.displayOrder ?? index,
                 alt: image.alt || {
@@ -216,14 +200,13 @@
     function toCamelProduct(product) {
         const images = normalizeProductImages(product);
         const primaryImage = images.find((image) => image.isPrimary) || images[0] || null;
-        const imagePath = primaryImage?.objectKey || primaryImage?.storagePath || product.primaryImagePath || product.image_path || "";
+        const imagePath = primaryImage?.objectKey || product.primaryImagePath || product.image_path || "";
         const packOptions = normalizeProductPackOptions(product);
 
         return {
             id: product.id || product.slug,
             slug: product.slug || product.id,
             categoryId: product.category_id || product.categoryId,
-            tone: product.tone || product.category?.tone || "pepper",
             active: product.active !== false,
             displayOrder: product.display_order ?? product.displayOrder ?? 0,
             name: product.name || {
@@ -252,7 +235,7 @@
                 en: product.price_en
             },
             imagePath,
-            imageUrl: product.imageUrl || primaryImage?.imageUrl || publicImageUrl(imagePath),
+            imageUrl: product.imageUrl || primaryImage?.imageUrl || mediaImageUrl(imagePath),
             images,
             packOptions
         };

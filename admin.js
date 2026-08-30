@@ -15,6 +15,10 @@ const newProductButton = document.getElementById("newProductButton");
 const resetProductForm = document.getElementById("resetProductForm");
 const saveProductButton = document.getElementById("saveProductButton");
 const deactivateProductButton = document.getElementById("deactivateProductButton");
+const deleteProductButton = document.getElementById("deleteProductButton");
+const productsTotalCount = document.getElementById("productsTotalCount");
+const productsActiveCount = document.getElementById("productsActiveCount");
+const productsWithoutImagesCount = document.getElementById("productsWithoutImagesCount");
 const productImages = document.getElementById("productImages");
 const imageSelectionHint = document.getElementById("imageSelectionHint");
 const imageStorageStatus = document.getElementById("imageStorageStatus");
@@ -76,6 +80,7 @@ function setProductFormMode(mode) {
     resetProductForm.textContent = isCreating ? "Очистить форму" : "Создать новый товар";
     saveProductButton.textContent = isCreating ? "Создать товар" : "Сохранить изменения";
     deactivateProductButton.hidden = isCreating;
+    deleteProductButton.hidden = isCreating;
 }
 
 function localField(record, field) {
@@ -443,7 +448,7 @@ function configureImageStorage() {
     imageStorageStatus.classList.toggle("admin-warning", !ready);
 
     if (!supportsR2Images) {
-        imageStorageStatus.textContent = "Сначала выполните SQL-файл supabase/migrations/20260826_cloudflare_r2_product_images.sql. Старые фото остаются доступными.";
+        imageStorageStatus.textContent = "Сначала выполните миграцию Cloudflare R2 для изображений.";
         return;
     }
 
@@ -453,6 +458,16 @@ function configureImageStorage() {
     }
 
     imageStorageStatus.textContent = "Новые фотографии будут храниться в Cloudflare R2. Секретные ключи не передаются в браузер.";
+}
+
+function updateProductOverview() {
+    const total = products.length;
+    const active = products.filter((product) => product.active).length;
+    const withoutImages = products.filter((product) => !(product.images || []).some((image) => image.imageUrl)).length;
+
+    productsTotalCount.textContent = String(total);
+    productsActiveCount.textContent = String(active);
+    productsWithoutImagesCount.textContent = String(withoutImages);
 }
 
 function createBadge(text, type = "") {
@@ -484,6 +499,7 @@ function renderProducts() {
     const search = productSearch.value.trim().toLowerCase();
     const categoryFilter = productCategoryFilter.value;
     productsList.replaceChildren();
+    updateProductOverview();
 
     const filteredProducts = products.filter((product) => {
         const productName = `${localField(product, "name")} ${product.slug}`.toLowerCase();
@@ -517,7 +533,8 @@ function renderProducts() {
             image.alt = "";
             preview.append(image);
         } else {
-            preview.textContent = (localField(product, "name") || "N").slice(0, 1);
+            preview.classList.add("empty");
+            preview.textContent = "Нет фото";
         }
 
         const copy = document.createElement("div");
@@ -750,6 +767,7 @@ function resetForm() {
     imageSelectionHint.textContent = "Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.";
     setMessage(productFormMessage, "");
     renderProducts();
+    productForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function renderProductImages(productId) {
@@ -821,8 +839,8 @@ async function renderProductImages(productId) {
         const title = document.createElement("strong");
         title.textContent = image.is_primary ? "Главное фото" : `Фото ${index + 1}`;
         const provider = document.createElement("span");
-        provider.className = `admin-image-provider ${image.storage_provider === "r2" ? "cloudflare" : "legacy"}`;
-        provider.textContent = image.storage_provider === "r2" ? "Cloudflare R2" : "Supabase (старое)";
+        provider.className = "admin-image-provider cloudflare";
+        provider.textContent = "Cloudflare R2";
         const path = document.createElement("p");
         path.textContent = (image.object_key || image.storage_path || "").split("/").pop();
         info.append(title, provider, path);
@@ -913,7 +931,6 @@ async function fillProductForm(productId) {
     productForm.elements.slug.value = product.slug;
     productForm.elements.category_id.value = product.categoryId;
     productForm.elements.display_order.value = product.displayOrder;
-    productForm.elements.tone.value = product.tone;
     productForm.elements.active.checked = product.active;
 
     ["uk", "ru", "en"].forEach((language) => {
@@ -936,7 +953,6 @@ function productPayload() {
     const payload = {
         slug: form.slug.value.trim(),
         category_id: form.category_id.value,
-        tone: form.tone.value,
         active: form.active.checked,
         display_order: Number(form.display_order.value) || 0,
         name_uk: form.name_uk.value.trim() || russianName,
@@ -1137,32 +1153,20 @@ async function deleteProductImage(productId, image) {
         return;
     }
 
-    if (image.storage_provider === "r2" && image.object_key) {
-        try {
-            await mediaApiRequest("/api/admin/images", {
-                method: "DELETE",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ imageId: image.id, productId })
-            });
-        } catch (error) {
-            setMessage(productFormMessage, error?.message || "Не удалось удалить фотографию из Cloudflare.", "error");
-            return;
-        }
-    } else {
-        const bucket = window.NIKAS_SUPABASE_CONFIG.productImagesBucket || "product-images";
-        const storage = await supabaseAdmin.storage.from(bucket).remove([image.storage_path]);
+    if (image.storage_provider !== "r2" || !image.object_key) {
+        setMessage(productFormMessage, "Файл не относится к Cloudflare R2. Сначала выполните миграцию R2-only.", "error");
+        return;
+    }
 
-        if (storage.error) {
-            setMessage(productFormMessage, storage.error.message, "error");
-            return;
-        }
-
-        const { error } = await supabaseAdmin.from("product_images").delete().eq("id", image.id);
-
-        if (error) {
-            setMessage(productFormMessage, error.message, "error");
-            return;
-        }
+    try {
+        await mediaApiRequest("/api/admin/images", {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ imageId: image.id, productId })
+        });
+    } catch (error) {
+        setMessage(productFormMessage, error?.message || "Не удалось удалить фотографию из Cloudflare.", "error");
+        return;
     }
 
     if (image.is_primary) {
@@ -1193,6 +1197,64 @@ async function deleteProductImage(productId, image) {
     }
 
     await renderProductImages(productId);
+}
+
+async function deleteProduct() {
+    const productId = String(productForm.elements.id.value || "").trim();
+    const product = products.find((item) => item.id === productId);
+
+    if (!productId || !product) {
+        return;
+    }
+
+    const productName = localField(product, "name") || product.slug;
+    const confirmed = window.confirm(
+        `Удалить товар «${productName}»?\n\nФотографии будут удалены из Cloudflare R2. Прошлые заявки сохранят историю товара.`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    deleteProductButton.disabled = true;
+    setMessage(productFormMessage, "Удаляем товар и фотографии...");
+
+    try {
+        const { data: images, error: imagesError } = await supabaseAdmin
+            .from("product_images")
+            .select("id, object_key, storage_provider")
+            .eq("product_id", productId);
+
+        if (imagesError) {
+            throw imagesError;
+        }
+
+        for (const image of images || []) {
+            if (image.storage_provider !== "r2" || !image.object_key) {
+                throw new Error("Найдена старая запись изображения. Сначала выполните миграцию R2-only.");
+            }
+
+            await mediaApiRequest("/api/admin/images", {
+                method: "DELETE",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ imageId: image.id, productId })
+            });
+        }
+
+        const { error } = await supabaseAdmin.from("products").delete().eq("id", productId);
+
+        if (error) {
+            throw error;
+        }
+
+        resetForm();
+        await loadAdminData();
+        setMessage(adminGlobalMessage, `Товар «${productName}» удалён.`, "success");
+    } catch (error) {
+        setMessage(productFormMessage, error?.message || "Не удалось удалить товар.", "error");
+    } finally {
+        deleteProductButton.disabled = false;
+    }
 }
 
 async function loadContactRequests() {
@@ -1874,6 +1936,7 @@ addPackOptionButton.addEventListener("click", () => {
 });
 productForm.addEventListener("submit", saveProduct);
 deactivateProductButton.addEventListener("click", deactivateProduct);
+deleteProductButton.addEventListener("click", deleteProduct);
 productForm.elements.image.addEventListener("change", () => {
     const files = [...(productForm.elements.image.files || [])];
     imageSelectionHint.textContent = files.length

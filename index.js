@@ -98,9 +98,15 @@ function clearContactSuccessTimer() {
     contactSuccessTimer = null;
 }
 
-function showContactSuccessMessage() {
+function showContactSuccessMessage(result = {}) {
     clearContactSuccessTimer();
-    setFormMessage(t("form.success"), "success");
+    const requestId = String(result?.requestId || "").trim();
+    const requestNumber = requestId ? requestId.slice(0, 8).toUpperCase() : "";
+    const message = requestNumber
+        ? t("form.successWithNumber", { number: requestNumber })
+        : t("form.success");
+
+    setFormMessage(message, "success");
     contactSuccessTimer = window.setTimeout(() => {
         contactSuccessTimer = null;
         updateContactSubmitState();
@@ -164,10 +170,10 @@ async function handleContactSubmit(event) {
     let submitted = false;
 
     try {
-        await window.NikasApi.submitContactRequest(contactFormValues());
+        const result = await window.NikasApi.submitContactRequest(contactFormValues());
         contactForm.reset();
         submitted = true;
-        showContactSuccessMessage();
+        showContactSuccessMessage(result);
     } catch (error) {
         clearContactSuccessTimer();
         setFormMessage(error?.message || t("form.error"), "error");

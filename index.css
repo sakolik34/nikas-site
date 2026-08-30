@@ -1228,7 +1228,8 @@ h3 {
     position: relative;
     min-height: 170px;
     overflow: hidden;
-    background: linear-gradient(145deg, #8f2f1e, #c25b34 46%, #e7b35d);
+    background: transparent;
+    border-bottom: 1px solid var(--border);
 }
 
 .product-photo img {
@@ -1240,56 +1241,10 @@ h3 {
     object-fit: cover;
 }
 
-.product-photo::before,
-.product-photo::after {
-    content: "";
-    position: absolute;
-    border-radius: 999px;
-}
-
-.product-photo::before {
-    right: -30px;
-    bottom: -46px;
-    width: 180px;
-    height: 180px;
-    background:
-        radial-gradient(circle, rgba(255, 255, 255, 0.14) 0 30%, transparent 31%),
-        radial-gradient(circle at 48% 48%, rgba(32, 32, 32, 0.24), rgba(32, 32, 32, 0.1) 42%, transparent 43%);
-}
-
-.product-photo::after {
-    top: 26px;
-    left: 24px;
-    width: 68px;
-    height: 68px;
-    background: rgba(255, 255, 255, 0.18);
-    box-shadow:
-        44px 48px 0 rgba(255, 255, 255, 0.1),
-        114px 18px 0 rgba(255, 255, 255, 0.11);
-}
-
-.product-tone-whole {
-    background: linear-gradient(145deg, #3a2a20, #756043 46%, #c5a86a);
-}
-
-.product-tone-mixes {
-    background: linear-gradient(145deg, #7c2e24, #b65c2d 45%, #d7a34a);
-}
-
-.product-tone-additives {
-    background: linear-gradient(145deg, #214b38, #5d8064 50%, #d9ded0);
-}
-
-.product-tone-citric {
-    background: linear-gradient(145deg, #d6d8c8, #f2f0dd 48%, #c7d1a4);
-}
-
-.product-tone-vegetables {
-    background: linear-gradient(145deg, #8e4325, #ca7842 50%, #e8c475);
-}
-
-.product-tone-soy {
-    background: linear-gradient(145deg, #53462f, #92835f 50%, #ddd1a6);
+.product-photo-empty {
+    display: grid;
+    place-items: center;
+    background: transparent;
 }
 
 .product-card-body {
@@ -2379,15 +2334,14 @@ h3 {
     min-height: 0;
 }
 
-.product-photo-letter {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 72px;
-    font-weight: 900;
+.product-photo-empty-label {
+    max-width: 180px;
+    padding: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.35;
+    text-align: center;
 }
 
 .product-card-body {

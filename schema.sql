@@ -28,15 +28,17 @@ as $$
     select exists (
         select 1
         from public.admin_profiles
-        where admin_profiles.user_id = is_admin.user_id
+        where admin_profiles.user_id = auth.uid()
           and admin_profiles.is_admin = true
     );
 $$;
 
+revoke all on function public.is_admin(uuid) from public, anon;
+grant execute on function public.is_admin(uuid) to authenticated;
+
 create table if not exists public.categories (
     id text primary key,
     slug text not null unique,
-    tone text not null default 'pepper',
     image_path text,
     active boolean not null default true,
     display_order integer not null default 0,
@@ -57,7 +59,6 @@ create table if not exists public.products (
     id uuid primary key default gen_random_uuid(),
     slug text not null unique,
     category_id text not null references public.categories(id) on update cascade on delete restrict,
-    tone text not null default 'pepper',
     active boolean not null default true,
     display_order integer not null default 0,
     name_uk text not null,
@@ -87,6 +88,8 @@ create table if not exists public.product_images (
     id uuid primary key default gen_random_uuid(),
     product_id uuid not null references public.products(id) on delete cascade,
     storage_path text not null,
+    storage_provider text not null default 'r2' check (storage_provider = 'r2'),
+    object_key text not null,
     is_primary boolean not null default false,
     display_order integer not null default 0,
     alt_uk text,
@@ -96,6 +99,53 @@ create table if not exists public.product_images (
     updated_at timestamptz not null default now(),
     unique (product_id, storage_path)
 );
+
+alter table public.product_images add column if not exists storage_provider text not null default 'r2';
+alter table public.product_images add column if not exists object_key text;
+
+alter table public.product_images
+drop constraint if exists product_images_storage_provider_check;
+
+alter table public.product_images
+drop constraint if exists product_images_r2_key_check;
+
+alter table public.product_images
+add constraint product_images_storage_provider_check
+check (storage_provider = 'r2');
+
+alter table public.product_images
+add constraint product_images_r2_key_check
+check (
+    object_key ~* '^products/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(jpg|png|webp)$'
+);
+
+create or replace function public.enforce_product_image_limit()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+    perform pg_advisory_xact_lock(hashtextextended(new.product_id::text, 0));
+
+    if (
+        select count(*)
+        from public.product_images
+        where product_id = new.product_id
+    ) >= 10 then
+        raise exception 'A product can have at most 10 images.'
+            using errcode = '23514';
+    end if;
+
+    return new;
+end;
+$$;
+
+drop trigger if exists product_images_limit_before_insert on public.product_images;
+create trigger product_images_limit_before_insert
+before insert on public.product_images
+for each row execute function public.enforce_product_image_limit();
+
+revoke all on function public.enforce_product_image_limit() from public, anon, authenticated;
 
 create table if not exists public.product_pack_options (
     id uuid primary key default gen_random_uuid(),
@@ -170,6 +220,9 @@ create table if not exists public.submission_rate_limits (
 create index if not exists categories_active_order_idx on public.categories (active, display_order);
 create index if not exists products_active_category_order_idx on public.products (active, category_id, display_order);
 create index if not exists product_images_product_order_idx on public.product_images (product_id, is_primary desc, display_order);
+create unique index if not exists product_images_object_key_idx
+on public.product_images (object_key)
+where object_key is not null;
 create index if not exists product_pack_options_product_order_idx on public.product_pack_options (product_id, active, display_order);
 create index if not exists contact_requests_status_created_idx on public.contact_requests (status, created_at desc);
 create index if not exists product_requests_status_created_idx on public.product_requests (status, created_at desc);
@@ -211,24 +264,24 @@ before update on public.product_requests
 for each row execute function public.set_updated_at();
 
 insert into public.categories (
-    id, slug, tone, active, display_order,
+    id, slug, active, display_order,
     title_uk, title_ru, title_en,
     short_title_uk, short_title_ru, short_title_en,
     description_uk, description_ru, description_en
 ) values
-    ('spices', 'spices', 'pepper', true, 10,
+    ('spices', 'spices', true, 10,
      'Спеції', 'Специи', 'Spices',
      'Спеції', 'Специи', 'Spices',
      'Перець, паприка, сушений часник та базові позиції для кухні, фасування і виробництва.',
      'Перец, паприка, сушеный чеснок и базовые позиции для кухни, фасовки и производства.',
      'Pepper, paprika, dried garlic and core ingredients for kitchens, packing and production.'),
-    ('flavor-enhancers', 'flavor-enhancers', 'additives', true, 20,
+    ('flavor-enhancers', 'flavor-enhancers', true, 20,
      'Підсилювачі смаку', 'Усилители вкуса', 'Flavor Enhancers',
      'Підсилювачі смаку', 'Усилители вкуса', 'Flavor Enhancers',
      'Глутамат натрію, харчові кислоти та технологічні інгредієнти для виробництва.',
      'Глутамат натрия, пищевые кислоты и технологические ингредиенты для производства.',
      'Monosodium glutamate, food acids and technical ingredients for production.'),
-    ('proteins', 'proteins', 'soy', true, 30,
+    ('proteins', 'proteins', true, 30,
      'Білки', 'Белки', 'Proteins',
      'Білки', 'Белки', 'Proteins',
      'Соєві білкові інгредієнти для харчового виробництва та технологічних задач.',
@@ -237,13 +290,13 @@ insert into public.categories (
 on conflict (id) do nothing;
 
 insert into public.products (
-    slug, category_id, tone, active, display_order,
+    slug, category_id, active, display_order,
     name_uk, name_ru, name_en,
     short_description_uk, short_description_ru, short_description_en,
     description_uk, description_ru, description_en,
     pack_uk, pack_ru, pack_en
 ) values
-    ('red-ground-pepper', 'spices', 'pepper', true, 10,
+    ('red-ground-pepper', 'spices', true, 10,
      'Перець червоний мелений', 'Перец красный молотый', 'Ground Red Pepper',
      'Гостра мелена позиція для соусів, маринадів, сумішей і м''ясних страв.',
      'Острая молотая позиция для соусов, маринадов, смесей и мясных блюд.',
@@ -252,7 +305,7 @@ insert into public.products (
      'Подходит для фасовки, HoReCa и производства пищевых смесей.',
      'Suitable for packing, HoReCa and food blend production.',
      'Фасування 1 / 5 / 25 кг', 'Фасовка 1 / 5 / 25 кг', 'Packing 1 / 5 / 25 kg'),
-    ('black-ground-pepper', 'spices', 'whole', true, 20,
+    ('black-ground-pepper', 'spices', true, 20,
      'Перець чорний мелений', 'Перец черный молотый', 'Ground Black Pepper',
      'Базова спеція для кухні, фасування, HoReCa та харчового виробництва.',
      'Базовая специя для кухни, фасовки, HoReCa и пищевого производства.',
@@ -261,7 +314,7 @@ insert into public.products (
      'Классическая позиция для ежедневного использования и оптовых поставок.',
      'A classic item for daily use and wholesale supply.',
      'Фасування від 1 кг', 'Фасовка от 1 кг', 'Packing from 1 kg'),
-    ('sweet-ground-paprika', 'spices', 'mixes', true, 30,
+    ('sweet-ground-paprika', 'spices', true, 30,
      'Паприка мелена солодка', 'Паприка молотая сладкая', 'Sweet Ground Paprika',
      'Яскрава паприка для кольору, м''якого смаку, сумішей і напівфабрикатів.',
      'Яркая паприка для цвета, мягкого вкуса, смесей и полуфабрикатов.',
@@ -270,7 +323,7 @@ insert into public.products (
      'Позиция для магазинов, производства и профессиональной кухни.',
      'An item for shops, production and professional kitchens.',
      'Мішки до 25 кг', 'Мешки до 25 кг', 'Bags up to 25 kg'),
-    ('black-peppercorn', 'spices', 'whole', true, 40,
+    ('black-peppercorn', 'spices', true, 40,
      'Перець чорний горошок', 'Перец черный горошек', 'Black Peppercorn',
      'Класичний перець горошком для фасування, млинів і виробництва.',
      'Классический перец горошком для фасовки, мельниц и производства.',
@@ -279,7 +332,7 @@ insert into public.products (
      'Цельная специя для маринадов, смесей и профессиональной кухни.',
      'A whole spice for marinades, blends and professional kitchens.',
      'Фасування 1 / 5 / 25 кг', 'Фасовка 1 / 5 / 25 кг', 'Packing 1 / 5 / 25 kg'),
-    ('dried-garlic-ground', 'spices', 'vegetables', true, 50,
+    ('dried-garlic-ground', 'spices', true, 50,
      'Часник сушений мелений', 'Чеснок сушеный молотый', 'Ground Dried Garlic',
      'Сильний аромат для сумішей, соусів, снеків, маринадів і виробництва.',
      'Сильный аромат для смесей, соусов, снеков, маринадов и производства.',
@@ -288,7 +341,7 @@ insert into public.products (
      'Удобная сухая позиция для рецептур и фасовки.',
      'A convenient dry ingredient for recipes and packing.',
      'Фасування від 1 кг', 'Фасовка от 1 кг', 'Packing from 1 kg'),
-    ('monosodium-glutamate-e621', 'flavor-enhancers', 'additives', true, 60,
+    ('monosodium-glutamate-e621', 'flavor-enhancers', true, 60,
      'Глутамат натрію E621', 'Глутамат натрия E621', 'Monosodium Glutamate E621',
      'Підсилювач смаку для виробництва, сумішей, снеків і напівфабрикатів.',
      'Усилитель вкуса для производства, смесей, снеков и полуфабрикатов.',
@@ -297,7 +350,7 @@ insert into public.products (
      'Технологический ингредиент для профессиональных пищевых задач.',
      'A technical ingredient for professional food applications.',
      'Мішки 25 кг', 'Мешки 25 кг', '25 kg bags'),
-    ('citric-acid-food-grade', 'flavor-enhancers', 'citric', true, 70,
+    ('citric-acid-food-grade', 'flavor-enhancers', true, 70,
      'Лимонна кислота харчова', 'Лимонная кислота пищевая', 'Food Grade Citric Acid',
      'Базова харчова кислота для виробництва, напоїв, соусів і фасування.',
      'Базовая пищевая кислота для производства, напитков, соусов и фасовки.',
@@ -306,7 +359,7 @@ insert into public.products (
      'Подходит для технологических процессов и оптовых поставок.',
      'Suitable for technical processes and wholesale supply.',
      'Мішки 25 кг', 'Мешки 25 кг', '25 kg bags'),
-    ('soy-protein-isolate-90', 'proteins', 'soy', true, 80,
+    ('soy-protein-isolate-90', 'proteins', true, 80,
      'Соєвий ізолят 90%', 'Соевый изолят 90%', 'Soy Protein Isolate 90%',
      'Білкова позиція для харчового виробництва, фаршів і технологічних задач.',
      'Белковая позиция для пищевого производства, фаршей и технологических задач.',
@@ -332,9 +385,6 @@ grant select on public.categories to anon, authenticated;
 grant select on public.products to anon, authenticated;
 grant select on public.product_images to anon, authenticated;
 grant select on public.product_pack_options to anon, authenticated;
-grant insert on public.contact_requests to anon, authenticated;
-grant insert on public.product_requests to anon, authenticated;
-grant insert on public.product_request_items to anon, authenticated;
 grant select on public.admin_profiles to authenticated;
 grant select, insert, update, delete on public.categories to authenticated;
 grant select, insert, update, delete on public.products to authenticated;
@@ -343,6 +393,17 @@ grant select, insert, update, delete on public.product_pack_options to authentic
 grant select, update on public.contact_requests to authenticated;
 grant select, update on public.product_requests to authenticated;
 grant select, insert, update, delete on public.product_request_items to authenticated;
+
+-- Only Supabase Edge Functions use service_role. It is never sent to browsers.
+-- Reset privileges first so old deployments cannot leave broader grants behind.
+revoke all on public.submission_rate_limits from service_role;
+revoke all on public.contact_requests from service_role;
+revoke all on public.product_requests from service_role;
+revoke all on public.product_request_items from service_role;
+grant select, insert, update on public.submission_rate_limits to service_role;
+grant select, insert, update on public.contact_requests to service_role;
+grant select, insert, update, delete on public.product_requests to service_role;
+grant insert on public.product_request_items to service_role;
 
 drop policy if exists "Public can read active categories" on public.categories;
 create policy "Public can read active categories"
@@ -419,10 +480,6 @@ using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Public can create contact requests" on public.contact_requests;
-create policy "Public can create contact requests"
-on public.contact_requests for insert
-to anon, authenticated
-with check (status = 'new');
 
 drop policy if exists "Admins can manage contact requests" on public.contact_requests;
 create policy "Admins can manage contact requests"
@@ -432,10 +489,6 @@ using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Public can create product requests" on public.product_requests;
-create policy "Public can create product requests"
-on public.product_requests for insert
-to anon, authenticated
-with check (status = 'new');
 
 drop policy if exists "Admins can manage product requests" on public.product_requests;
 create policy "Admins can manage product requests"
@@ -445,10 +498,6 @@ using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Public can create product request items" on public.product_request_items;
-create policy "Public can create product request items"
-on public.product_request_items for insert
-to anon, authenticated
-with check (quantity between 1 and 999);
 
 drop policy if exists "Admins can manage product request items" on public.product_request_items;
 create policy "Admins can manage product request items"

@@ -3,7 +3,6 @@ window.NIKAS_FALLBACK_CATALOG = {
         {
             id: "spices",
             slug: "spices",
-            tone: "pepper",
             active: true,
             displayOrder: 10,
             title: {
@@ -25,7 +24,6 @@ window.NIKAS_FALLBACK_CATALOG = {
         {
             id: "flavor-enhancers",
             slug: "flavor-enhancers",
-            tone: "additives",
             active: true,
             displayOrder: 20,
             title: {
@@ -47,7 +45,6 @@ window.NIKAS_FALLBACK_CATALOG = {
         {
             id: "proteins",
             slug: "proteins",
-            tone: "soy",
             active: true,
             displayOrder: 30,
             title: {
@@ -72,7 +69,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-red-ground-pepper",
             slug: "red-ground-pepper",
             categoryId: "spices",
-            tone: "pepper",
             active: true,
             displayOrder: 10,
             name: {
@@ -100,7 +96,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-black-ground-pepper",
             slug: "black-ground-pepper",
             categoryId: "spices",
-            tone: "whole",
             active: true,
             displayOrder: 20,
             name: {
@@ -128,7 +123,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-sweet-paprika",
             slug: "sweet-ground-paprika",
             categoryId: "spices",
-            tone: "mixes",
             active: true,
             displayOrder: 30,
             name: {
@@ -156,7 +150,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-black-peppercorn",
             slug: "black-peppercorn",
             categoryId: "spices",
-            tone: "whole",
             active: true,
             displayOrder: 40,
             name: {
@@ -184,7 +177,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-dried-garlic-ground",
             slug: "dried-garlic-ground",
             categoryId: "spices",
-            tone: "vegetables",
             active: true,
             displayOrder: 50,
             name: {
@@ -212,7 +204,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-msg-e621",
             slug: "monosodium-glutamate-e621",
             categoryId: "flavor-enhancers",
-            tone: "additives",
             active: true,
             displayOrder: 60,
             name: {
@@ -240,7 +231,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-citric-acid",
             slug: "citric-acid-food-grade",
             categoryId: "flavor-enhancers",
-            tone: "citric",
             active: true,
             displayOrder: 70,
             name: {
@@ -268,7 +258,6 @@ window.NIKAS_FALLBACK_CATALOG = {
             id: "fallback-soy-isolate",
             slug: "soy-protein-isolate-90",
             categoryId: "proteins",
-            tone: "soy",
             active: true,
             displayOrder: 80,
             name: {

@@ -154,7 +154,7 @@ function requestProduct(product, packOption = null, quantity = 1) {
 
 function createProductVisual(product, className = "") {
     const visual = document.createElement("div");
-    visual.className = `product-photo product-tone-${product.tone || "pepper"} ${className}`.trim();
+    visual.className = `product-photo ${className}`.trim();
 
     if (product.imageUrl) {
         const image = document.createElement("img");
@@ -163,8 +163,8 @@ function createProductVisual(product, className = "") {
         image.loading = "lazy";
         visual.append(image);
     } else {
-        const fallback = createTextElement("span", "product-photo-letter", field(product, "name").slice(0, 1));
-        fallback.setAttribute("aria-hidden", "true");
+        visual.classList.add("product-photo-empty");
+        const fallback = createTextElement("span", "product-photo-empty-label", t("product.imageMissing"));
         visual.append(fallback);
     }
 

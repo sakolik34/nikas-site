@@ -316,11 +316,45 @@ body:not(.admin-authenticated) .admin-app {
     box-shadow: var(--shadow);
 }
 
+.admin-overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.admin-overview article {
+    display: grid;
+    gap: 7px;
+    min-height: 108px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgba(31, 36, 31, 0.05);
+}
+
+.admin-overview span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.admin-overview strong {
+    font-size: 34px;
+    line-height: 1;
+}
+
 .admin-grid {
     display: grid;
     grid-template-columns: minmax(260px, 0.8fr) minmax(420px, 1.2fr);
     gap: 18px;
     align-items: start;
+}
+
+.admin-form-row-single {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 340px;
 }
 
 .admin-list,
@@ -343,6 +377,16 @@ body:not(.admin-authenticated) .admin-app {
 .admin-card.active {
     border-color: rgba(47, 107, 79, 0.48);
     box-shadow: 0 0 0 4px rgba(47, 107, 79, 0.1);
+}
+
+.admin-card-preview.empty {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 900;
+    text-align: center;
 }
 
 .admin-card h3,
@@ -487,9 +531,8 @@ fieldset {
     color: var(--accent);
 }
 
-.admin-image-provider.legacy {
-    background: rgba(184, 74, 55, 0.1);
-    color: var(--danger);
+.admin-delete-product {
+    margin-left: auto;
 }
 
 .request-items {
@@ -516,7 +559,8 @@ fieldset {
 
 @media (max-width: 1100px) {
     .admin-grid,
-    .admin-language-grid {
+    .admin-language-grid,
+    .admin-overview {
         grid-template-columns: 1fr;
     }
 
@@ -549,6 +593,24 @@ fieldset {
 
     .admin-image-row button {
         grid-column: 1 / -1;
+    }
+
+    .admin-overview {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .admin-overview article {
+        min-height: 88px;
+        padding: 13px;
+    }
+
+    .admin-overview strong {
+        font-size: 26px;
+    }
+
+    .admin-delete-product {
+        margin-left: 0;
     }
 }
 

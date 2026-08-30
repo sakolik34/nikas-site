@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Nikas Admin</title>
     <link rel="icon" href="./icon_nikas-2.png">
-    <link rel="stylesheet" href="./admin.css">
+    <link rel="stylesheet" href="./admin.css?v=20260830">
 </head>
 <body>
     <main class="admin-shell">
@@ -60,6 +60,20 @@
             <p class="admin-message" id="adminGlobalMessage" aria-live="polite"></p>
 
             <section class="admin-panel active" data-admin-panel="products">
+                <div class="admin-overview" aria-label="Сводка по каталогу">
+                    <article>
+                        <span>Всего товаров</span>
+                        <strong id="productsTotalCount">0</strong>
+                    </article>
+                    <article>
+                        <span>Показываются на сайте</span>
+                        <strong id="productsActiveCount">0</strong>
+                    </article>
+                    <article>
+                        <span>Требуют фото</span>
+                        <strong id="productsWithoutImagesCount">0</strong>
+                    </article>
+                </div>
                 <div class="admin-toolbar">
                     <label>
                         <span>Поиск</span>
@@ -107,24 +121,11 @@
                             </label>
                         </div>
 
-                        <div class="admin-form-row">
+                        <div class="admin-form-row admin-form-row-single">
                             <label>
                                 <span>Порядок показа</span>
                                 <small>Меньшее число ставит товар выше в каталоге.</small>
                                 <input name="display_order" type="number" step="1" value="0">
-                            </label>
-                            <label>
-                                <span>Цвет заглушки без фото</span>
-                                <small>Используется, только если фотографии ещё не загружены.</small>
-                                <select name="tone">
-                                    <option value="pepper">Красный перец</option>
-                                    <option value="whole">Тёмные специи</option>
-                                    <option value="mixes">Смеси и паприка</option>
-                                    <option value="additives">Пищевые добавки</option>
-                                    <option value="citric">Светлый / кислоты</option>
-                                    <option value="vegetables">Сушёные овощи</option>
-                                    <option value="soy">Белки</option>
-                                </select>
                             </label>
                         </div>
 
@@ -242,6 +243,7 @@
                         <div class="admin-editor-actions">
                             <button class="admin-primary" id="saveProductButton" type="submit">Создать товар</button>
                             <button class="admin-danger" id="deactivateProductButton" type="button">Скрыть товар</button>
+                            <button class="admin-danger admin-delete-product" id="deleteProductButton" type="button">Удалить товар</button>
                         </div>
                     </form>
                 </div>
@@ -306,8 +308,8 @@
     </main>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js"></script>
-    <script src="./nikas-api.js"></script>
-    <script src="./admin.js"></script>
+    <script src="./i18n.js?v=20260830"></script>
+    <script src="./nikas-api.js?v=20260830"></script>
+    <script src="./admin.js?v=20260830"></script>
 </body>
 </html>

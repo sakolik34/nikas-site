@@ -1153,19 +1153,27 @@ async function deleteProductImage(productId, image) {
         return;
     }
 
-    if (image.storage_provider !== "r2" || !image.object_key) {
-        setMessage(productFormMessage, "Файл не относится к Cloudflare R2. Сначала выполните миграцию R2-only.", "error");
-        return;
-    }
-
     try {
-        await mediaApiRequest("/api/admin/images", {
-            method: "DELETE",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ imageId: image.id, productId })
-        });
+        if (image.storage_provider === "r2" && image.object_key) {
+            await mediaApiRequest("/api/admin/images", {
+                method: "DELETE",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ imageId: image.id, productId })
+            });
+        } else {
+            // This is pre-R2 metadata only. It cannot point to a current R2 file.
+            const { error } = await supabaseAdmin
+                .from("product_images")
+                .delete()
+                .eq("id", image.id)
+                .eq("product_id", productId);
+
+            if (error) {
+                throw error;
+            }
+        }
     } catch (error) {
-        setMessage(productFormMessage, error?.message || "Не удалось удалить фотографию из Cloudflare.", "error");
+        setMessage(productFormMessage, error?.message || "Не удалось удалить фотографию.", "error");
         return;
     }
 
@@ -1231,7 +1239,7 @@ async function deleteProduct() {
 
         for (const image of images || []) {
             if (image.storage_provider !== "r2" || !image.object_key) {
-                throw new Error("Найдена старая запись изображения. Сначала выполните миграцию R2-only.");
+                continue;
             }
 
             await mediaApiRequest("/api/admin/images", {

@@ -2462,6 +2462,52 @@ h3 {
     object-fit: contain;
 }
 
+.product-gallery-controls {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    left: 14px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.product-gallery-nav,
+.product-gallery-counter {
+    border: 1px solid rgba(31, 40, 31, 0.18);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 6px 18px rgba(20, 30, 20, 0.12);
+}
+
+.product-gallery-nav {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--ink);
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.product-gallery-nav:hover,
+.product-gallery-nav:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent-dark);
+}
+
+.product-gallery-counter {
+    justify-self: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 800;
+}
+
 .product-gallery-placeholder {
     min-height: 100%;
 }

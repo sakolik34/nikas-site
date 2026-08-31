@@ -227,13 +227,14 @@
                         <div class="admin-image-box">
                             <div class="admin-section-heading">
                                 <h3>Фотографии товара</h3>
-                                <p>Можно выбрать сразу несколько JPG, PNG или WebP. Новые файлы безопасно загружаются в Cloudflare R2. После загрузки задайте главное фото и порядок галереи.</p>
+                                <p>Добавляйте фото по одному или сразу несколько. Новые файлы безопасно загружаются в Cloudflare R2. После загрузки задайте главное фото и порядок галереи.</p>
                             </div>
                             <p class="admin-file-hint" id="imageStorageStatus">Проверяем подключение хранилища изображений...</p>
                             <label>
                                 <span>Добавить фотографии</span>
                                 <input name="image" type="file" accept="image/png,image/jpeg,image/webp" multiple>
                             </label>
+                            <button class="admin-secondary admin-upload-images" id="uploadProductImagesButton" type="button" disabled>Загрузить выбранные фото</button>
                             <p class="admin-file-hint" id="imageSelectionHint">Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.</p>
                             <div class="admin-images" id="productImages"></div>
                         </div>
@@ -308,8 +309,8 @@
     </main>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js?v=20260830"></script>
+    <script src="./i18n.js?v=20260831"></script>
     <script src="./nikas-api.js?v=20260830"></script>
-    <script src="./admin.js?v=20260831"></script>
+    <script src="./admin.js?v=20260831b"></script>
 </body>
 </html>

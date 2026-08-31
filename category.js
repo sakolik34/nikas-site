@@ -293,7 +293,7 @@ function closeProductModal() {
     }
 }
 
-function setMainProductImage(url, alt, activeId) {
+function setMainProductImage(url, alt, activeId, index, total) {
     const mainImage = productModal.querySelector("[data-product-main-image]");
     mainImage.src = url;
     mainImage.alt = alt;
@@ -301,6 +301,11 @@ function setMainProductImage(url, alt, activeId) {
     productModal.querySelectorAll("[data-product-thumbnail]").forEach((button) => {
         button.classList.toggle("active", button.dataset.productThumbnail === activeId);
     });
+
+    const counter = productModal.querySelector("[data-product-gallery-counter]");
+    if (counter && Number.isInteger(index) && total) {
+        counter.textContent = t("product.photoPosition", { current: index + 1, total });
+    }
 }
 
 function renderProductModal(product) {
@@ -333,6 +338,48 @@ function renderProductModal(product) {
         mainImage.src = firstImage.imageUrl;
         mainImage.alt = localizedValue(firstImage.alt) || productName;
         mainFrame.append(mainImage);
+
+        const selectImage = (requestedIndex) => {
+            const index = (requestedIndex + images.length) % images.length;
+            const image = images[index];
+            const imageId = String(image.id || index);
+            setMainProductImage(
+                image.imageUrl,
+                localizedValue(image.alt) || productName,
+                imageId,
+                index,
+                images.length
+            );
+        };
+
+        if (images.length > 1) {
+            const controls = document.createElement("div");
+            controls.className = "product-gallery-controls";
+
+            const previous = createTextElement("button", "product-gallery-nav", "‹");
+            previous.type = "button";
+            previous.setAttribute("aria-label", t("product.previousPhoto"));
+            previous.addEventListener("click", () => {
+                const active = productModal.querySelector("[data-product-thumbnail].active")?.dataset.productThumbnail;
+                const current = images.findIndex((image, index) => String(image.id || index) === active);
+                selectImage(current - 1);
+            });
+
+            const counter = createTextElement("span", "product-gallery-counter", t("product.photoPosition", { current: 1, total: images.length }));
+            counter.dataset.productGalleryCounter = "true";
+
+            const next = createTextElement("button", "product-gallery-nav", "›");
+            next.type = "button";
+            next.setAttribute("aria-label", t("product.nextPhoto"));
+            next.addEventListener("click", () => {
+                const active = productModal.querySelector("[data-product-thumbnail].active")?.dataset.productThumbnail;
+                const current = images.findIndex((image, index) => String(image.id || index) === active);
+                selectImage(current + 1);
+            });
+
+            controls.append(previous, counter, next);
+            mainFrame.append(controls);
+        }
         gallery.append(mainFrame);
 
         if (images.length > 1) {
@@ -353,7 +400,7 @@ function renderProductModal(product) {
                 thumb.alt = "";
                 button.append(thumb);
                 button.addEventListener("click", () => {
-                    setMainProductImage(image.imageUrl, alt, imageId);
+                    setMainProductImage(image.imageUrl, alt, imageId, index, images.length);
                 });
                 thumbnails.append(button);
             });

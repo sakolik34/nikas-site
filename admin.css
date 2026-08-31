@@ -758,6 +758,10 @@ label small {
     background: #ffffff;
 }
 
+.admin-upload-images {
+    margin-top: 12px;
+}
+
 .admin-file-hint {
     font-weight: 700;
 }

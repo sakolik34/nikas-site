@@ -22,6 +22,7 @@ const productsWithoutImagesCount = document.getElementById("productsWithoutImage
 const productImages = document.getElementById("productImages");
 const imageSelectionHint = document.getElementById("imageSelectionHint");
 const imageStorageStatus = document.getElementById("imageStorageStatus");
+const uploadProductImagesButton = document.getElementById("uploadProductImagesButton");
 const priceFieldHint = document.getElementById("priceFieldHint");
 const packOptionsList = document.getElementById("packOptionsList");
 const addPackOptionButton = document.getElementById("addPackOptionButton");
@@ -81,6 +82,7 @@ function setProductFormMode(mode) {
     saveProductButton.textContent = isCreating ? "Создать товар" : "Сохранить изменения";
     deactivateProductButton.hidden = isCreating;
     deleteProductButton.hidden = isCreating;
+    uploadProductImagesButton.disabled = isCreating || !supportsR2Images;
 }
 
 function localField(record, field) {
@@ -445,6 +447,7 @@ function configureImageStorage() {
     const ready = supportsR2Images && configured;
 
     productForm.elements.image.disabled = !ready;
+    uploadProductImagesButton.disabled = !ready || !productForm.elements.id.value;
     imageStorageStatus.classList.toggle("admin-warning", !ready);
 
     if (!supportsR2Images) {
@@ -765,6 +768,7 @@ function resetForm() {
     renderPackOptions();
     productImages.replaceChildren();
     imageSelectionHint.textContent = "Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.";
+    uploadProductImagesButton.disabled = true;
     setMessage(productFormMessage, "");
     renderProducts();
     productForm.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1033,6 +1037,34 @@ async function uploadProductImages(productId) {
 
     productForm.elements.image.value = "";
     imageSelectionHint.textContent = "Файлы загружены. Можно выбрать следующую группу фотографий.";
+}
+
+async function uploadSelectedProductImages() {
+    const productId = String(productForm.elements.id.value || "").trim();
+
+    if (!productId) {
+        setMessage(productFormMessage, "Сначала сохраните товар, затем добавляйте фотографии.", "error");
+        return;
+    }
+
+    if (!(productForm.elements.image.files || []).length) {
+        setMessage(productFormMessage, "Сначала выберите хотя бы одну фотографию.", "error");
+        return;
+    }
+
+    uploadProductImagesButton.disabled = true;
+    setMessage(productFormMessage, "Загружаем фотографии...");
+
+    try {
+        await uploadProductImages(productId);
+        await loadAdminData();
+        await fillProductForm(productId);
+        setMessage(productFormMessage, "Фотографии добавлены. Можно выбрать следующую по одной.", "success");
+    } catch (error) {
+        setMessage(productFormMessage, error?.message || "Не удалось загрузить фотографии.", "error");
+    } finally {
+        uploadProductImagesButton.disabled = !productForm.elements.id.value || !supportsR2Images;
+    }
 }
 
 async function saveProduct(event) {
@@ -1945,10 +1977,15 @@ addPackOptionButton.addEventListener("click", () => {
 productForm.addEventListener("submit", saveProduct);
 deactivateProductButton.addEventListener("click", deactivateProduct);
 deleteProductButton.addEventListener("click", deleteProduct);
+uploadProductImagesButton.addEventListener("click", uploadSelectedProductImages);
 productForm.elements.image.addEventListener("change", () => {
     const files = [...(productForm.elements.image.files || [])];
+    const hasProduct = Boolean(productForm.elements.id.value);
+    uploadProductImagesButton.disabled = !hasProduct || !files.length || !supportsR2Images;
     imageSelectionHint.textContent = files.length
-        ? `Выбрано файлов: ${files.length}. Они загрузятся после нажатия «Сохранить товар».`
+        ? hasProduct
+            ? `Выбрано файлов: ${files.length}. Нажмите «Загрузить выбранные фото».`
+            : `Выбрано файлов: ${files.length}. Сначала создайте товар, затем они загрузятся автоматически.`
         : "Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.";
 });
 

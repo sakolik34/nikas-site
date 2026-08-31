@@ -154,16 +154,21 @@ async function mediaApiRequest(path, options = {}) {
     const token = await currentAccessToken();
     const headers = new Headers(options.headers || {});
     headers.set("authorization", `Bearer ${token}`);
+    const isImageUpload = path === "/api/admin/images/upload" && options.method === "POST";
+    const timeoutMs = isImageUpload ? 120000 : 45000;
+    const timeoutMessage = isImageUpload
+        ? "Загрузка фотографии не получила ответ за 2 минуты. Проверьте интернет и попробуйте один файл ещё раз."
+        : "Cloudflare слишком долго отвечает. Попробуйте ещё раз.";
     let response;
 
     try {
         response = await withTimeout(
             fetch(`${baseUrl}${path}`, { ...options, headers }),
-            45000,
-            "Cloudflare слишком долго загружает фотографию. Попробуйте ещё раз."
+            timeoutMs,
+            timeoutMessage
         );
     } catch (error) {
-        if (error?.message?.includes("Cloudflare")) {
+        if (error?.message === timeoutMessage) {
             throw error;
         }
         throw new Error("Не удалось связаться с Cloudflare Image API. Проверьте Worker и интернет.");
@@ -1052,7 +1057,9 @@ async function uploadSelectedProductImages() {
         return;
     }
 
+    savingProduct = true;
     uploadProductImagesButton.disabled = true;
+    saveProductButton.disabled = true;
     setMessage(productFormMessage, "Загружаем фотографии...");
 
     try {
@@ -1063,6 +1070,8 @@ async function uploadSelectedProductImages() {
     } catch (error) {
         setMessage(productFormMessage, error?.message || "Не удалось загрузить фотографии.", "error");
     } finally {
+        savingProduct = false;
+        saveProductButton.disabled = false;
         uploadProductImagesButton.disabled = !productForm.elements.id.value || !supportsR2Images;
     }
 }

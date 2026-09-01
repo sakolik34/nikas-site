@@ -683,11 +683,7 @@ main {
     position: absolute;
     inset: 0;
     z-index: 0;
-    background:
-        linear-gradient(90deg, rgba(5, 7, 5, 0.24), rgba(5, 7, 5, 0.08) 50%, rgba(5, 7, 5, 0.24)),
-        linear-gradient(180deg, rgba(5, 7, 5, 0.3), rgba(5, 7, 5, 0.68)),
-        url("./backgroundforall.png?v=20260902") center / 100% 100% no-repeat,
-        #050705;
+    background: url("./backgroundforall.png?v=20260902-v2") center / 100% 100% no-repeat, #050705;
     opacity: 1;
     pointer-events: none;
 }
@@ -696,9 +692,7 @@ main {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background:
-        linear-gradient(90deg, rgba(5, 7, 5, 0.48), rgba(5, 7, 5, 0.18) 24%, rgba(5, 7, 5, 0.18) 76%, rgba(5, 7, 5, 0.48)),
-        linear-gradient(180deg, rgba(5, 7, 5, 0.18), rgba(5, 7, 5, 0.66));
+    background: transparent;
     pointer-events: none;
 }
 
@@ -1013,13 +1007,15 @@ h3 {
 
 .category-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: 20px;
+    align-items: stretch;
 }
 
 .category-card {
     position: relative;
     display: grid;
+    min-width: 0;
     min-height: 430px;
     aspect-ratio: 4 / 5;
     overflow: hidden;
@@ -1140,6 +1136,7 @@ h3 {
     z-index: 1;
     align-self: end;
     display: grid;
+    min-width: 0;
     gap: 12px;
     min-height: 176px;
     padding: 28px;
@@ -1150,11 +1147,13 @@ h3 {
 .category-content strong {
     font-size: clamp(28px, 3vw, 38px);
     line-height: 1.08;
+    overflow-wrap: anywhere;
 }
 
 .category-content > span:last-child {
     color: rgba(255, 255, 255, 0.76);
     line-height: 1.55;
+    overflow-wrap: anywhere;
 }
 
 .product-number {

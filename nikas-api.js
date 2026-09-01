@@ -209,6 +209,7 @@
             categoryId: product.category_id || product.categoryId,
             active: product.active !== false,
             displayOrder: product.display_order ?? product.displayOrder ?? 0,
+            imageDisclaimerEnabled: Boolean(product.image_disclaimer_enabled ?? product.imageDisclaimerEnabled),
             name: product.name || {
                 uk: product.name_uk,
                 ru: product.name_ru,

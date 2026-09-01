@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Nikas Admin</title>
     <link rel="icon" href="./icon_nikas-2.png">
-    <link rel="stylesheet" href="./admin.css?v=20260830">
+    <link rel="stylesheet" href="./admin.css?v=20260901">
 </head>
 <body>
     <main class="admin-shell">
@@ -133,6 +133,15 @@
                             <input name="active" type="checkbox" checked>
                             <span>Показывать товар на сайте</span>
                         </label>
+
+                        <label class="admin-check admin-check-note">
+                            <input name="image_disclaimer_enabled" type="checkbox">
+                            <span>
+                                <b>Показывать пометку на фото</b>
+                                <small>Включайте для художественных или сгенерированных изображений. Посетитель увидит небольшую подпись, что реальный внешний вид товара может отличаться.</small>
+                            </span>
+                        </label>
+                        <p class="admin-file-hint" id="imageDisclaimerHint"></p>
 
                         <div class="admin-section-heading">
                             <h3>Тексты для каталога</h3>
@@ -309,8 +318,8 @@
     </main>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js?v=20260831"></script>
-    <script src="./nikas-api.js?v=20260830"></script>
-    <script src="./admin.js?v=20260831c"></script>
+    <script src="./i18n.js?v=20260901"></script>
+    <script src="./nikas-api.js?v=20260901"></script>
+    <script src="./admin.js?v=20260901"></script>
 </body>
 </html>

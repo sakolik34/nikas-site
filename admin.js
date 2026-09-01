@@ -24,6 +24,7 @@ const imageSelectionHint = document.getElementById("imageSelectionHint");
 const imageStorageStatus = document.getElementById("imageStorageStatus");
 const uploadProductImagesButton = document.getElementById("uploadProductImagesButton");
 const priceFieldHint = document.getElementById("priceFieldHint");
+const imageDisclaimerHint = document.getElementById("imageDisclaimerHint");
 const packOptionsList = document.getElementById("packOptionsList");
 const addPackOptionButton = document.getElementById("addPackOptionButton");
 const packOptionsHint = document.getElementById("packOptionsHint");
@@ -46,6 +47,7 @@ let supportsPriceFields = false;
 let supportsRequestItemSnapshots = false;
 let supportsPackOptions = false;
 let supportsR2Images = false;
+let supportsImageDisclaimer = false;
 
 function withTimeout(promise, ms, message) {
     let timeoutId;
@@ -399,13 +401,15 @@ async function loadAdminData() {
         priceProbeResult,
         requestItemSnapshotProbeResult,
         packOptionsProbeResult,
-        r2ImagesProbeResult
+        r2ImagesProbeResult,
+        imageDisclaimerProbeResult
     ] = await Promise.all([
         supabaseAdmin.from("categories").select("*").order("display_order", { ascending: true }),
         supabaseAdmin.from("products").select("price_ru").limit(1),
         supabaseAdmin.from("product_request_items").select("pack_snapshot, price_snapshot").limit(1),
         supabaseAdmin.from("product_pack_options").select("id").limit(1),
-        supabaseAdmin.from("product_images").select("storage_provider, object_key").limit(1)
+        supabaseAdmin.from("product_images").select("storage_provider, object_key").limit(1),
+        supabaseAdmin.from("products").select("image_disclaimer_enabled").limit(1)
     ]);
 
     if (categoriesResult.error) {
@@ -416,6 +420,7 @@ async function loadAdminData() {
     supportsRequestItemSnapshots = !requestItemSnapshotProbeResult.error;
     supportsPackOptions = !packOptionsProbeResult.error;
     supportsR2Images = !r2ImagesProbeResult.error;
+    supportsImageDisclaimer = !imageDisclaimerProbeResult.error;
 
     const [productsResult, packOptionsResult] = await Promise.all([
         supabaseAdmin.from("products").select("*, images:product_images(*)").order("display_order", { ascending: true }),
@@ -441,10 +446,20 @@ async function loadAdminData() {
     configurePriceFields();
     configurePackOptions();
     configureImageStorage();
+    configureImageDisclaimer();
     populateCategoryControls();
     renderProducts();
     await Promise.all([loadContactRequests(), loadProductRequests()]);
     setMessage(adminGlobalMessage, "Данные загружены.", "success");
+}
+
+function configureImageDisclaimer() {
+    const input = productForm.elements.image_disclaimer_enabled;
+    input.disabled = !supportsImageDisclaimer;
+    imageDisclaimerHint.classList.toggle("admin-warning", !supportsImageDisclaimer);
+    imageDisclaimerHint.textContent = supportsImageDisclaimer
+        ? "Подпись выводится ненавязчиво под фото в каталоге и под главным фото в подробном окне товара."
+        : "Чтобы включить эту настройку, один раз выполните новую SQL-миграцию для каталога.";
 }
 
 function configureImageStorage() {
@@ -768,6 +783,7 @@ function resetForm() {
     productForm.reset();
     productForm.elements.id.value = "";
     productForm.elements.active.checked = true;
+    productForm.elements.image_disclaimer_enabled.checked = false;
     productForm.elements.display_order.value = "0";
     setProductFormMode("create");
     renderPackOptions();
@@ -941,6 +957,7 @@ async function fillProductForm(productId) {
     productForm.elements.category_id.value = product.categoryId;
     productForm.elements.display_order.value = product.displayOrder;
     productForm.elements.active.checked = product.active;
+    productForm.elements.image_disclaimer_enabled.checked = Boolean(product.imageDisclaimerEnabled);
 
     ["uk", "ru", "en"].forEach((language) => {
         productForm.elements[`name_${language}`].value = product.name?.[language] || product[`name_${language}`] || "";
@@ -982,6 +999,10 @@ function productPayload() {
         payload.price_uk = form.price_uk.value.trim() || null;
         payload.price_ru = form.price_ru.value.trim() || null;
         payload.price_en = form.price_en.value.trim() || null;
+    }
+
+    if (supportsImageDisclaimer) {
+        payload.image_disclaimer_enabled = form.image_disclaimer_enabled.checked;
     }
 
     return payload;

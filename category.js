@@ -19,6 +19,7 @@ let pageState = {
 let productModal = null;
 let activeProduct = null;
 let productModalReturnFocus = null;
+let syncingProductHistory = false;
 
 function t(key, paramsValue) {
     return window.NikasI18n?.t(key, paramsValue) || key;
@@ -162,6 +163,10 @@ function createProductVisual(product, className = "") {
         image.alt = field(product, "name");
         image.loading = "lazy";
         visual.append(image);
+
+        if (product.imageDisclaimerEnabled) {
+            visual.append(createTextElement("span", "product-image-disclaimer", t("product.imageDisclaimer")));
+        }
     } else {
         visual.classList.add("product-photo-empty");
         const fallback = createTextElement("span", "product-photo-empty-label", t("product.imageMissing"));
@@ -279,7 +284,18 @@ function productImages(product) {
     return images;
 }
 
-function closeProductModal() {
+function productHash(product) {
+    return `#product=${encodeURIComponent(product.slug || product.id)}`;
+}
+
+function productFromLocation() {
+    const match = window.location.hash.match(/^#product=([^&]+)$/);
+    const value = match ? decodeURIComponent(match[1]) : "";
+
+    return pageState.products.find((product) => product.slug === value || String(product.id) === value) || null;
+}
+
+function closeProductModal({ updateHistory = true } = {}) {
     if (!productModal || productModal.hidden) {
         return;
     }
@@ -290,6 +306,14 @@ function closeProductModal() {
 
     if (productModalReturnFocus instanceof HTMLElement) {
         productModalReturnFocus.focus();
+    }
+
+    if (updateHistory && /^#product=/.test(window.location.hash)) {
+        syncingProductHistory = true;
+        window.history.back();
+        window.setTimeout(() => {
+            syncingProductHistory = false;
+        }, 0);
     }
 }
 
@@ -338,6 +362,10 @@ function renderProductModal(product) {
         mainImage.src = firstImage.imageUrl;
         mainImage.alt = localizedValue(firstImage.alt) || productName;
         mainFrame.append(mainImage);
+
+        if (product.imageDisclaimerEnabled) {
+            mainFrame.append(createTextElement("span", "product-gallery-disclaimer", t("product.imageDisclaimer")));
+        }
 
         const selectImage = (requestedIndex) => {
             const index = (requestedIndex + images.length) % images.length;
@@ -574,14 +602,34 @@ function createProductModal() {
     return productModal;
 }
 
-function openProductModal(product, returnFocus) {
+function openProductModal(product, returnFocus, { updateHistory = true } = {}) {
     createProductModal();
+
+    if (updateHistory && window.location.hash !== productHash(product)) {
+        window.history.pushState({ nikasProduct: product.id }, "", `${window.location.pathname}${window.location.search}${productHash(product)}`);
+    }
+
     activeProduct = product;
     productModalReturnFocus = returnFocus || document.activeElement;
     renderProductModal(product);
     productModal.hidden = false;
     document.body.classList.add("modal-open");
     productModal.querySelector(".product-modal-close").focus();
+}
+
+function syncProductModalWithLocation() {
+    if (syncingProductHistory) {
+        return;
+    }
+
+    const product = productFromLocation();
+
+    if (product) {
+        openProductModal(product, document.activeElement, { updateHistory: false });
+        return;
+    }
+
+    closeProductModal({ updateHistory: false });
 }
 
 function renderCategoryPage() {
@@ -659,6 +707,7 @@ async function loadCategoryPage() {
     }
 
     renderCategoryPage();
+    syncProductModalWithLocation();
 }
 
 document.addEventListener("keydown", (event) => {
@@ -674,5 +723,7 @@ window.addEventListener("nikas:languagechange", () => {
         renderProductModal(activeProduct);
     }
 });
+
+window.addEventListener("popstate", syncProductModalWithLocation);
 
 loadCategoryPage();

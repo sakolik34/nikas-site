@@ -76,6 +76,7 @@ create table if not exists public.products (
     price_uk text,
     price_ru text,
     price_en text,
+    image_disclaimer_enabled boolean not null default false,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
@@ -83,6 +84,7 @@ create table if not exists public.products (
 alter table public.products add column if not exists price_uk text;
 alter table public.products add column if not exists price_ru text;
 alter table public.products add column if not exists price_en text;
+alter table public.products add column if not exists image_disclaimer_enabled boolean not null default false;
 
 create table if not exists public.product_images (
     id uuid primary key default gen_random_uuid(),
@@ -276,17 +278,17 @@ insert into public.categories (
      'Перец, паприка, сушеный чеснок и базовые позиции для кухни, фасовки и производства.',
      'Pepper, paprika, dried garlic and core ingredients for kitchens, packing and production.'),
     ('flavor-enhancers', 'flavor-enhancers', true, 20,
-     'Підсилювачі смаку', 'Усилители вкуса', 'Flavor Enhancers',
-     'Підсилювачі смаку', 'Усилители вкуса', 'Flavor Enhancers',
-     'Глутамат натрію, харчові кислоти та технологічні інгредієнти для виробництва.',
-     'Глутамат натрия, пищевые кислоты и технологические ингредиенты для производства.',
-     'Monosodium glutamate, food acids and technical ingredients for production.'),
+     'Функціональні добавки', 'Функциональные добавки', 'Functional Additives',
+     'Функціональні добавки', 'Функциональные добавки', 'Functional Additives',
+     'Функціональні добавки для стабільності, смаку та технологічних процесів у виробництві.',
+     'Функциональные добавки для стабильности, вкуса и технологических процессов в производстве.',
+     'Functional ingredients for stability, taste and production processes.'),
     ('proteins', 'proteins', true, 30,
-     'Білки', 'Белки', 'Proteins',
-     'Білки', 'Белки', 'Proteins',
-     'Соєві білкові інгредієнти для харчового виробництва та технологічних задач.',
-     'Соевые белковые ингредиенты для пищевого производства и технологических задач.',
-     'Soy protein ingredients for food production and technical tasks.')
+     'Соєві продукти', 'Соевые продукты', 'Soy Products',
+     'Соєві продукти', 'Соевые продукты', 'Soy Products',
+     'Соєві продукти та інгредієнти для харчового виробництва.',
+     'Соевые продукты и ингредиенты для пищевого производства.',
+     'Soy products and ingredients for food production.')
 on conflict (id) do nothing;
 
 insert into public.products (
@@ -343,9 +345,9 @@ insert into public.products (
      'Фасування від 1 кг', 'Фасовка от 1 кг', 'Packing from 1 kg'),
     ('monosodium-glutamate-e621', 'flavor-enhancers', true, 60,
      'Глутамат натрію E621', 'Глутамат натрия E621', 'Monosodium Glutamate E621',
-     'Підсилювач смаку для виробництва, сумішей, снеків і напівфабрикатів.',
-     'Усилитель вкуса для производства, смесей, снеков и полуфабрикатов.',
-     'A flavor enhancer for production, blends, snacks and semi-finished products.',
+     'Функціональна добавка для виробництва, сумішей, снеків і напівфабрикатів.',
+     'Функциональная добавка для производства, смесей, снеков и полуфабрикатов.',
+     'A functional additive for production, blends, snacks and semi-finished products.',
      'Технологічний інгредієнт для професійних харчових задач.',
      'Технологический ингредиент для профессиональных пищевых задач.',
      'A technical ingredient for professional food applications.',
@@ -361,9 +363,9 @@ insert into public.products (
      'Мішки 25 кг', 'Мешки 25 кг', '25 kg bags'),
     ('soy-protein-isolate-90', 'proteins', true, 80,
      'Соєвий ізолят 90%', 'Соевый изолят 90%', 'Soy Protein Isolate 90%',
-     'Білкова позиція для харчового виробництва, фаршів і технологічних задач.',
-     'Белковая позиция для пищевого производства, фаршей и технологических задач.',
-     'A protein ingredient for food production, mince products and technical tasks.',
+     'Соєвий продукт для харчового виробництва, фаршів і технологічних задач.',
+     'Соевый продукт для пищевого производства, фаршей и технологических задач.',
+     'A soy ingredient for food production, mince products and technical tasks.',
      'Інгредієнт для виробників і оптових замовлень.',
      'Ингредиент для производителей и оптовых заказов.',
      'An ingredient for manufacturers and wholesale orders.',

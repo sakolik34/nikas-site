@@ -27,19 +27,19 @@ window.NIKAS_FALLBACK_CATALOG = {
             active: true,
             displayOrder: 20,
             title: {
-                uk: "Підсилювачі смаку",
-                ru: "Усилители вкуса",
-                en: "Flavor Enhancers"
+                uk: "Функціональні добавки",
+                ru: "Функциональные добавки",
+                en: "Functional Additives"
             },
             shortTitle: {
-                uk: "Підсилювачі смаку",
-                ru: "Усилители вкуса",
-                en: "Flavor Enhancers"
+                uk: "Функціональні добавки",
+                ru: "Функциональные добавки",
+                en: "Functional Additives"
             },
             description: {
-                uk: "Глутамат натрію, харчові кислоти та технологічні інгредієнти для виробництва.",
-                ru: "Глутамат натрия, пищевые кислоты и технологические ингредиенты для производства.",
-                en: "Monosodium glutamate, food acids and technical ingredients for production."
+                uk: "Функціональні добавки для стабільності, смаку та технологічних процесів у виробництві.",
+                ru: "Функциональные добавки для стабильности, вкуса и технологических процессов в производстве.",
+                en: "Functional ingredients for stability, taste and production processes."
             }
         },
         {
@@ -48,19 +48,19 @@ window.NIKAS_FALLBACK_CATALOG = {
             active: true,
             displayOrder: 30,
             title: {
-                uk: "Білки",
-                ru: "Белки",
-                en: "Proteins"
+                uk: "Соєві продукти",
+                ru: "Соевые продукты",
+                en: "Soy Products"
             },
             shortTitle: {
-                uk: "Білки",
-                ru: "Белки",
-                en: "Proteins"
+                uk: "Соєві продукти",
+                ru: "Соевые продукты",
+                en: "Soy Products"
             },
             description: {
-                uk: "Соєві білкові інгредієнти для харчового виробництва та технологічних задач.",
-                ru: "Соевые белковые ингредиенты для пищевого производства и технологических задач.",
-                en: "Soy protein ingredients for food production and technical tasks."
+                uk: "Соєві продукти та інгредієнти для харчового виробництва.",
+                ru: "Соевые продукты и ингредиенты для пищевого производства.",
+                en: "Soy products and ingredients for food production."
             }
         }
     ],
@@ -212,9 +212,9 @@ window.NIKAS_FALLBACK_CATALOG = {
                 en: "Monosodium Glutamate E621"
             },
             shortDescription: {
-                uk: "Підсилювач смаку для виробництва, сумішей, снеків і напівфабрикатів.",
-                ru: "Усилитель вкуса для производства, смесей, снеков и полуфабрикатов.",
-                en: "A flavor enhancer for production, blends, snacks and semi-finished products."
+                uk: "Функціональна добавка для виробництва, сумішей, снеків і напівфабрикатів.",
+                ru: "Функциональная добавка для производства, смесей, снеков и полуфабрикатов.",
+                en: "A functional additive for production, blends, snacks and semi-finished products."
             },
             description: {
                 uk: "Технологічний інгредієнт для професійних харчових задач.",
@@ -266,9 +266,9 @@ window.NIKAS_FALLBACK_CATALOG = {
                 en: "Soy Protein Isolate 90%"
             },
             shortDescription: {
-                uk: "Білкова позиція для харчового виробництва, фаршів і технологічних задач.",
-                ru: "Белковая позиция для пищевого производства, фаршей и технологических задач.",
-                en: "A protein ingredient for food production, mince products and technical tasks."
+                uk: "Соєвий продукт для харчового виробництва, фаршів і технологічних задач.",
+                ru: "Соевый продукт для пищевого производства, фаршей и технологических задач.",
+                en: "A soy ingredient for food production, mince products and technical tasks."
             },
             description: {
                 uk: "Інгредієнт для виробників і оптових замовлень.",

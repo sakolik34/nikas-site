@@ -113,22 +113,23 @@ function packOptionLabel(packOption) {
 }
 
 function packSummary(product) {
+    const configuredPack = field(product, "pack");
+
+    // The packing description is editorial product information. It must not be
+    // replaced by the customer's quantity-selection modes.
+    if (configuredPack) {
+        return configuredPack;
+    }
+
     const options = productPackOptions(product)
         .map(packOptionLabel)
         .filter(Boolean);
 
     if (options.length) {
-        const fixedSummary = options.slice(0, 4).join(" / ");
-        return productSupportsCustomAmount(product)
-            ? `${fixedSummary} · ${t("product.customUnitsSummary")}`
-            : fixedSummary;
+        return options.slice(0, 4).join(" / ");
     }
 
-    if (productSupportsCustomAmount(product)) {
-        return t("product.customUnitsSummary");
-    }
-
-    return field(product, "pack");
+    return "";
 }
 
 function selectedPackOption() {

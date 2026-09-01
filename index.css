@@ -730,6 +730,8 @@ main {
 
 .hero-side-left img {
     object-position: left center;
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 72%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 72%, transparent 100%);
 }
 
 .hero-side-right {
@@ -740,6 +742,8 @@ main {
 
 .hero-side-right img {
     object-position: right center;
+    -webkit-mask-image: linear-gradient(to left, #000 0%, #000 72%, transparent 100%);
+    mask-image: linear-gradient(to left, #000 0%, #000 72%, transparent 100%);
 }
 
 @keyframes heroSideLeftIn {

@@ -684,8 +684,8 @@ main {
     inset: 0;
     z-index: 0;
     background:
-        linear-gradient(90deg, rgba(5, 7, 5, 0.16), rgba(5, 7, 5, 0.02) 50%, rgba(5, 7, 5, 0.16)),
-        linear-gradient(180deg, rgba(5, 7, 5, 0.18), rgba(5, 7, 5, 0.48)),
+        linear-gradient(90deg, rgba(5, 7, 5, 0.24), rgba(5, 7, 5, 0.08) 50%, rgba(5, 7, 5, 0.24)),
+        linear-gradient(180deg, rgba(5, 7, 5, 0.3), rgba(5, 7, 5, 0.68)),
         url("./backgroundforall.png?v=20260902") center / 100% 100% no-repeat,
         #050705;
     opacity: 1;
@@ -697,18 +697,18 @@ main {
     inset: 0;
     z-index: 1;
     background:
-        linear-gradient(90deg, rgba(5, 7, 5, 0.42), rgba(5, 7, 5, 0.1) 24%, rgba(5, 7, 5, 0.1) 76%, rgba(5, 7, 5, 0.42)),
-        linear-gradient(180deg, rgba(5, 7, 5, 0.14), rgba(5, 7, 5, 0.58));
+        linear-gradient(90deg, rgba(5, 7, 5, 0.48), rgba(5, 7, 5, 0.18) 24%, rgba(5, 7, 5, 0.18) 76%, rgba(5, 7, 5, 0.48)),
+        linear-gradient(180deg, rgba(5, 7, 5, 0.18), rgba(5, 7, 5, 0.66));
     pointer-events: none;
 }
 
 .hero-side-image {
     --hero-side-opacity: 0.92;
     position: absolute;
-    top: 50%;
+    top: 0;
     z-index: 2;
     width: var(--hero-side-width);
-    height: var(--hero-stage-height);
+    height: 100%;
     opacity: 0;
     pointer-events: none;
     filter: saturate(1.02) contrast(1.04) brightness(0.96);
@@ -718,13 +718,13 @@ main {
 .hero-side-image img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     filter: drop-shadow(0 28px 70px rgba(0, 0, 0, 0.36));
 }
 
 .hero-side-left {
     left: 0;
-    transform: translate3d(-180px, -50%, 0) scale(0.96);
+    transform: translate3d(-180px, 0, 0) scale(0.96);
     animation: heroSideLeftIn 0.95s cubic-bezier(0.18, 0.8, 0.2, 1) 0.12s forwards;
 }
 
@@ -734,7 +734,7 @@ main {
 
 .hero-side-right {
     right: 0;
-    transform: translate3d(180px, -50%, 0) scale(0.96);
+    transform: translate3d(180px, 0, 0) scale(0.96);
     animation: heroSideRightIn 0.95s cubic-bezier(0.18, 0.8, 0.2, 1) 0.12s forwards;
 }
 
@@ -745,14 +745,14 @@ main {
 @keyframes heroSideLeftIn {
     to {
         opacity: var(--hero-side-opacity);
-        transform: translate3d(0, -50%, 0) scale(1);
+        transform: translate3d(0, 0, 0) scale(1);
     }
 }
 
 @keyframes heroSideRightIn {
     to {
         opacity: var(--hero-side-opacity);
-        transform: translate3d(0, -50%, 0) scale(1);
+        transform: translate3d(0, 0, 0) scale(1);
     }
 }
 
@@ -963,7 +963,7 @@ h3 {
     }
 
     .hero-side-image {
-        transform: translateY(-50%);
+        transform: none;
     }
 
     .hero-scroll-cue span {

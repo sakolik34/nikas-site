@@ -28,6 +28,10 @@ const imageDisclaimerHint = document.getElementById("imageDisclaimerHint");
 const packOptionsList = document.getElementById("packOptionsList");
 const addPackOptionButton = document.getElementById("addPackOptionButton");
 const packOptionsHint = document.getElementById("packOptionsHint");
+const predefinedPackOptionsSection = document.getElementById("predefinedPackOptionsSection");
+const purchaseModesHint = document.getElementById("purchaseModesHint");
+const productReadinessStatus = document.getElementById("productReadinessStatus");
+const productReadinessList = document.getElementById("productReadinessList");
 const contactRequestsList = document.getElementById("contactRequestsList");
 const productRequestsList = document.getElementById("productRequestsList");
 const contactRequestsSummary = document.getElementById("contactRequestsSummary");
@@ -48,6 +52,8 @@ let supportsRequestItemSnapshots = false;
 let supportsPackOptions = false;
 let supportsR2Images = false;
 let supportsImageDisclaimer = false;
+let supportsQuantityModes = false;
+let supportsRequestItemAmounts = false;
 
 function withTimeout(promise, ms, message) {
     let timeoutId;
@@ -357,11 +363,12 @@ function configurePriceFields() {
 
 function configurePackOptions() {
     if (addPackOptionButton) {
-        addPackOptionButton.disabled = !supportsPackOptions;
+        addPackOptionButton.disabled = !supportsPackOptions
+            || !productForm.elements.predefined_pack_options_enabled.checked;
     }
 
     packOptionsHint.textContent = supportsPackOptions
-        ? "Добавляйте любые варианты объёма, веса или упаковки. Порядок строк будет таким же на сайте."
+        ? "Добавляйте любые варианты объёма, веса или упаковки. При включённом режиме нужен хотя бы один вариант; порядок строк сохранится на сайте."
         : "Чтобы включить варианты объёма и фасовки, один раз повторно выполните обновлённый файл supabase/schema.sql.";
     packOptionsHint.classList.toggle("admin-warning", !supportsPackOptions);
 
@@ -372,6 +379,152 @@ function configurePackOptions() {
         message.textContent = "Таблица вариантов ещё не создана в Supabase.";
         packOptionsList.append(message);
     }
+}
+
+function quantityModeState() {
+    return {
+        predefined: Boolean(productForm.elements.predefined_pack_options_enabled?.checked),
+        custom: Boolean(productForm.elements.custom_amount_enabled?.checked)
+    };
+}
+
+function updateQuantityModeUi() {
+    const { predefined } = quantityModeState();
+
+    predefinedPackOptionsSection?.classList.toggle("is-disabled", !predefined);
+    predefinedPackOptionsSection?.setAttribute("aria-disabled", String(!predefined));
+
+    if (addPackOptionButton) {
+        addPackOptionButton.disabled = !supportsPackOptions || !predefined;
+    }
+}
+
+function configureQuantityModes() {
+    ["predefined_pack_options_enabled", "custom_amount_enabled"].forEach((name) => {
+        const input = productForm.elements[name];
+
+        if (input) {
+            input.disabled = !supportsQuantityModes;
+        }
+    });
+
+    purchaseModesHint.textContent = supportsQuantityModes
+        ? "Если включены оба способа, клиент сначала увидит готовые варианты, а ниже — свободный ввод количества."
+        : "Сначала выполните миграцию supabase/migrations/20260901_product_quantity_modes.sql. Без неё способы выбора не сохранятся.";
+    purchaseModesHint.classList.toggle("admin-warning", !supportsQuantityModes);
+    updateQuantityModeUi();
+}
+
+function getProductReadiness() {
+    const form = productForm.elements;
+    const { predefined, custom } = quantityModeState();
+    const selectedProduct = products.find((product) => product.id === selectedProductId);
+    const existingImages = selectedProduct?.images?.filter((image) => image.imageUrl).length || 0;
+    const selectedImages = form.image?.files?.length || 0;
+    const packOptions = supportsPackOptions ? collectPackOptions() : [];
+    const errors = [];
+    const warnings = [];
+    const ready = [];
+
+    if (!supportsQuantityModes || !supportsRequestItemAmounts) {
+        errors.push({
+            text: "Обновление базы для новых способов выбора ещё не выполнено. Запустите миграцию 20260901_product_quantity_modes.sql.",
+            focusName: ""
+        });
+    }
+
+    if (!form.slug.value.trim()) {
+        errors.push({ text: "Не заполнен адрес товара (slug).", focusName: "slug" });
+    }
+
+    if (!form.category_id.value) {
+        errors.push({ text: "Не выбран раздел каталога.", focusName: "category_id" });
+    }
+
+    if (!form.name_ru.value.trim()) {
+        errors.push({ text: "Не заполнено обязательное название товара на русском.", focusName: "name_ru" });
+    }
+
+    if (!predefined && !custom) {
+        errors.push({
+            text: "Включите хотя бы один способ выбора объёма: готовые варианты или свободное количество.",
+            focusName: "predefined_pack_options_enabled"
+        });
+    } else {
+        const modeLabel = predefined && custom
+            ? "Включены готовые варианты и свободное количество."
+            : predefined
+                ? "Включены готовые варианты фасовки."
+                : "Включён свободный ввод количества в л, кг или т.";
+        ready.push({ text: modeLabel });
+    }
+
+    if (predefined && !packOptions.length) {
+        errors.push({
+            text: "Готовые варианты включены, но ни один вариант фасовки не заполнен.",
+            focusName: ""
+        });
+    } else if (predefined) {
+        ready.push({ text: `Заполнено готовых вариантов: ${packOptions.length}.` });
+    }
+
+    if (!existingImages && !selectedImages) {
+        warnings.push({ text: "У товара нет фотографии. Сохранить можно, но в каталоге будет текстовая заглушка." });
+    } else {
+        ready.push({ text: `Фотографии: ${existingImages + selectedImages}.` });
+    }
+
+    if (supportsPriceFields && !["uk", "ru", "en"].some((language) => form[`price_${language}`].value.trim())) {
+        warnings.push({ text: "Цена не указана — посетитель увидит «цену и наличие уточняйте»." });
+    }
+
+    if (!["uk", "ru", "en"].some((language) => form[`description_${language}`].value.trim())) {
+        warnings.push({ text: "Нет полного описания товара. Это не мешает сохранению, но карточка будет менее информативной." });
+    }
+
+    return { errors, warnings, ready };
+}
+
+function renderProductReadiness() {
+    if (!productReadinessList || !productReadinessStatus) {
+        return getProductReadiness();
+    }
+
+    const result = getProductReadiness();
+    productReadinessList.replaceChildren();
+
+    [...result.errors.map((item) => ({ ...item, type: "error" })),
+        ...result.warnings.map((item) => ({ ...item, type: "warning" })),
+        ...result.ready.map((item) => ({ ...item, type: "ready" }))]
+        .forEach((item) => {
+            const row = document.createElement("li");
+            row.textContent = item.text;
+            row.classList.toggle("is-error", item.type === "error");
+            row.classList.toggle("is-warning", item.type === "warning");
+            productReadinessList.append(row);
+        });
+
+    productReadinessStatus.classList.toggle("has-errors", result.errors.length > 0);
+    productReadinessStatus.classList.toggle("has-warnings", !result.errors.length && result.warnings.length > 0);
+    productReadinessStatus.textContent = result.errors.length
+        ? `Нужно исправить: ${result.errors.length}`
+        : result.warnings.length
+            ? `Можно сохранить · советов: ${result.warnings.length}`
+            : "Готово к публикации";
+
+    return result;
+}
+
+function focusReadinessProblem(problem) {
+    const field = problem?.focusName ? productForm.elements[problem.focusName] : null;
+
+    if (field instanceof HTMLElement) {
+        field.focus();
+        field.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+    }
+
+    document.getElementById("productReadiness")?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function attachPackOptions(productRows, packOptionsRows) {
@@ -402,14 +555,18 @@ async function loadAdminData() {
         requestItemSnapshotProbeResult,
         packOptionsProbeResult,
         r2ImagesProbeResult,
-        imageDisclaimerProbeResult
+        imageDisclaimerProbeResult,
+        quantityModesProbeResult,
+        requestItemAmountProbeResult
     ] = await Promise.all([
         supabaseAdmin.from("categories").select("*").order("display_order", { ascending: true }),
         supabaseAdmin.from("products").select("price_ru").limit(1),
         supabaseAdmin.from("product_request_items").select("pack_snapshot, price_snapshot").limit(1),
         supabaseAdmin.from("product_pack_options").select("id").limit(1),
         supabaseAdmin.from("product_images").select("storage_provider, object_key").limit(1),
-        supabaseAdmin.from("products").select("image_disclaimer_enabled").limit(1)
+        supabaseAdmin.from("products").select("image_disclaimer_enabled").limit(1),
+        supabaseAdmin.from("products").select("predefined_pack_options_enabled, custom_amount_enabled").limit(1),
+        supabaseAdmin.from("product_request_items").select("amount_value, amount_unit").limit(1)
     ]);
 
     if (categoriesResult.error) {
@@ -421,6 +578,8 @@ async function loadAdminData() {
     supportsPackOptions = !packOptionsProbeResult.error;
     supportsR2Images = !r2ImagesProbeResult.error;
     supportsImageDisclaimer = !imageDisclaimerProbeResult.error;
+    supportsQuantityModes = !quantityModesProbeResult.error;
+    supportsRequestItemAmounts = !requestItemAmountProbeResult.error;
 
     const [productsResult, packOptionsResult] = await Promise.all([
         supabaseAdmin.from("products").select("*, images:product_images(*)").order("display_order", { ascending: true }),
@@ -445,10 +604,12 @@ async function loadAdminData() {
         .map(window.NikasApi.normalizeProduct);
     configurePriceFields();
     configurePackOptions();
+    configureQuantityModes();
     configureImageStorage();
     configureImageDisclaimer();
     populateCategoryControls();
     renderProducts();
+    renderProductReadiness();
     await Promise.all([loadContactRequests(), loadProductRequests()]);
     setMessage(adminGlobalMessage, "Данные загружены.", "success");
 }
@@ -574,9 +735,16 @@ function renderProducts() {
 
         const badges = document.createElement("div");
         badges.className = "admin-badges";
+        const fixedOptionsEnabled = product.predefinedPackOptionsEnabled !== false;
+        const customAmountEnabled = product.customAmountEnabled === true;
         badges.append(
             createBadge(product.categoryId),
-            product.packOptions?.length ? createBadge(`${product.packOptions.length} вариантов`) : createBadge("Без вариантов", "neutral"),
+            fixedOptionsEnabled && product.packOptions?.length
+                ? createBadge(`${product.packOptions.length} готовых вариантов`)
+                : createBadge("Готовые варианты выключены", "neutral"),
+            customAmountEnabled
+                ? createBadge("Свободное количество", "green")
+                : createBadge("Без свободного ввода", "neutral"),
             createBadge(product.active ? "Показывается" : "Скрыт", product.active ? "green" : "warm")
         );
 
@@ -603,6 +771,8 @@ function movePackOptionRow(row, direction) {
     } else {
         packOptionsList.insertBefore(sibling, row);
     }
+
+    renderProductReadiness();
 }
 
 function packOptionInput(labelText, language, value = "") {
@@ -668,7 +838,10 @@ function createPackOptionRow(packOption = {}) {
     remove.type = "button";
     remove.className = "admin-danger";
     remove.textContent = "Удалить";
-    remove.addEventListener("click", () => row.remove());
+    remove.addEventListener("click", () => {
+        row.remove();
+        renderProductReadiness();
+    });
 
     actions.append(up, down, remove);
     row.append(actions);
@@ -690,6 +863,9 @@ function renderPackOptions(packOptions = []) {
     sortedOptions.forEach((packOption) => {
         packOptionsList.append(createPackOptionRow(packOption));
     });
+
+    updateQuantityModeUi();
+    renderProductReadiness();
 }
 
 function collectPackOptions() {
@@ -784,9 +960,13 @@ function resetForm() {
     productForm.elements.id.value = "";
     productForm.elements.active.checked = true;
     productForm.elements.image_disclaimer_enabled.checked = false;
+    productForm.elements.predefined_pack_options_enabled.checked = true;
+    productForm.elements.custom_amount_enabled.checked = false;
     productForm.elements.display_order.value = "0";
     setProductFormMode("create");
     renderPackOptions();
+    updateQuantityModeUi();
+    renderProductReadiness();
     productImages.replaceChildren();
     imageSelectionHint.textContent = "Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.";
     uploadProductImagesButton.disabled = true;
@@ -958,6 +1138,8 @@ async function fillProductForm(productId) {
     productForm.elements.display_order.value = product.displayOrder;
     productForm.elements.active.checked = product.active;
     productForm.elements.image_disclaimer_enabled.checked = Boolean(product.imageDisclaimerEnabled);
+    productForm.elements.predefined_pack_options_enabled.checked = product.predefinedPackOptionsEnabled !== false;
+    productForm.elements.custom_amount_enabled.checked = product.customAmountEnabled === true;
 
     ["uk", "ru", "en"].forEach((language) => {
         productForm.elements[`name_${language}`].value = product.name?.[language] || product[`name_${language}`] || "";
@@ -968,6 +1150,8 @@ async function fillProductForm(productId) {
     });
 
     renderPackOptions(product.packOptions || []);
+    updateQuantityModeUi();
+    renderProductReadiness();
     renderProducts();
     await renderProductImages(productId);
 }
@@ -1003,6 +1187,11 @@ function productPayload() {
 
     if (supportsImageDisclaimer) {
         payload.image_disclaimer_enabled = form.image_disclaimer_enabled.checked;
+    }
+
+    if (supportsQuantityModes) {
+        payload.predefined_pack_options_enabled = form.predefined_pack_options_enabled.checked;
+        payload.custom_amount_enabled = form.custom_amount_enabled.checked;
     }
 
     return payload;
@@ -1100,8 +1289,21 @@ async function uploadSelectedProductImages() {
 async function saveProduct(event) {
     event.preventDefault();
 
-    if (savingProduct || !productForm.checkValidity()) {
+    const readiness = renderProductReadiness();
+
+    if (savingProduct) {
+        return;
+    }
+
+    if (!productForm.checkValidity()) {
         setMessage(productFormMessage, "Заполните обязательные поля.", "error");
+        productForm.reportValidity();
+        return;
+    }
+
+    if (readiness.errors.length) {
+        setMessage(productFormMessage, readiness.errors[0].text, "error");
+        focusReadinessProblem(readiness.errors[0]);
         return;
     }
 
@@ -1574,7 +1776,9 @@ function requestCopyText(row, type) {
             .forEach((item, index) => {
                 const pack = item.pack_snapshot ? ` (${item.pack_snapshot})` : "";
                 const price = item.price_snapshot ? ` · ${item.price_snapshot}` : "";
-                lines.push(`${index + 1}. ${item.product_name_snapshot}${pack} — ${item.quantity}${price}`);
+                const amount = formatRequestItemAmount(item);
+                const amountText = amount ? ` · объём: ${amount}` : "";
+                lines.push(`${index + 1}. ${item.product_name_snapshot}${pack}${amountText} · позиций: ${item.quantity}${price}`);
             });
     }
 
@@ -1616,7 +1820,7 @@ function requestItemField(labelText, fieldName, value, options = {}) {
 
     const input = document.createElement("input");
     input.type = options.type || "text";
-    input.value = value || "";
+    input.value = value ?? "";
     input.dataset.requestItemField = fieldName;
     input.required = options.required === true;
     input.disabled = options.disabled === true;
@@ -1632,11 +1836,47 @@ function requestItemField(labelText, fieldName, value, options = {}) {
     if (options.type === "number") {
         input.min = String(options.min || 1);
         input.max = String(options.max || 999);
-        input.inputMode = "numeric";
+        input.step = String(options.step || 1);
+        input.inputMode = options.inputMode || "numeric";
     }
 
     label.append(caption, input);
     return label;
+}
+
+function requestItemSelect(labelText, fieldName, value, options, disabled = false) {
+    const label = document.createElement("label");
+    label.className = `request-item-field request-item-field-${fieldName}`;
+    const caption = document.createElement("span");
+    caption.textContent = labelText;
+    const select = document.createElement("select");
+    select.dataset.requestItemField = fieldName;
+    select.disabled = disabled;
+
+    options.forEach(([optionValue, optionLabel]) => {
+        const option = document.createElement("option");
+        option.value = optionValue;
+        option.textContent = optionLabel;
+        option.selected = optionValue === (value || "");
+        select.append(option);
+    });
+
+    label.append(caption, select);
+    return label;
+}
+
+function amountUnitLabel(unit) {
+    return ({ l: "л", kg: "кг", t: "т" })[unit] || unit || "";
+}
+
+function formatRequestItemAmount(item) {
+    const value = Number(item.amount_value);
+
+    if (!Number.isFinite(value) || value <= 0 || !item.amount_unit) {
+        return "";
+    }
+
+    return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 3 }).format(value)} ${amountUnitLabel(item.amount_unit)}`;
 }
 
 function createRequestItemEditRow(item = {}) {
@@ -1667,10 +1907,30 @@ function createRequestItemEditRow(item = {}) {
         { maxLength: 120, disabled: !supportsRequestItemSnapshots }
     );
     const quantity = requestItemField(
-        "Количество",
+        "Позиций",
         "quantity",
         String(item.quantity || 1),
         { type: "number", min: 1, max: 999, required: true }
+    );
+    const amount = requestItemField(
+        "Объём",
+        "amount",
+        item.amount_value,
+        {
+            type: "number",
+            min: 0.001,
+            max: 1000000,
+            step: 0.001,
+            inputMode: "decimal",
+            disabled: !supportsRequestItemAmounts
+        }
+    );
+    const unit = requestItemSelect(
+        "Ед.",
+        "unit",
+        item.amount_unit,
+        [["", "—"], ["l", "л"], ["kg", "кг"], ["t", "т"]],
+        !supportsRequestItemAmounts
     );
 
     const remove = document.createElement("button");
@@ -1681,7 +1941,7 @@ function createRequestItemEditRow(item = {}) {
     remove.setAttribute("aria-label", "Удалить позицию из заявки");
     remove.addEventListener("click", () => itemRow.remove());
 
-    itemRow.append(name, pack, price, quantity, remove);
+    itemRow.append(name, pack, price, quantity, amount, unit, remove);
     return itemRow;
 }
 
@@ -1727,6 +1987,13 @@ function createRequestEditor(row, type) {
             schemaHint.className = "admin-message admin-warning request-item-schema-hint";
             schemaHint.textContent = "Фасовка и цена включатся после повторного запуска supabase/schema.sql.";
             itemEditor.append(schemaHint);
+        }
+
+        if (!supportsRequestItemAmounts) {
+            const amountHint = document.createElement("p");
+            amountHint.className = "admin-message admin-warning request-item-schema-hint";
+            amountHint.textContent = "Свободный объём включится после миграции 20260901_product_quantity_modes.sql.";
+            itemEditor.append(amountHint);
         }
 
         const itemRows = document.createElement("div");
@@ -1789,6 +2056,22 @@ async function saveRequestChanges(event, row, type, message, button) {
         return;
     }
 
+    if (type === "product" && supportsRequestItemAmounts) {
+        const invalidAmountRow = itemRows.find((itemRow) => {
+            const amount = itemRow.querySelector('[data-request-item-field="amount"]')?.value.trim() || "";
+            const unit = itemRow.querySelector('[data-request-item-field="unit"]')?.value || "";
+            const numericAmount = Number(amount.replace(",", "."));
+            return Boolean(amount) !== Boolean(unit)
+                || (amount && (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > 1000000));
+        });
+
+        if (invalidAmountRow) {
+            setMessage(message, "Для свободного объёма укажите положительное число и единицу: л, кг или т.", "error");
+            invalidAmountRow.querySelector('[data-request-item-field="amount"]')?.focus();
+            return;
+        }
+    }
+
     setButtonLoading(button, true, "Сохраняем...", "Сохранить изменения");
     setMessage(message, "Сохраняем изменения...");
 
@@ -1831,6 +2114,13 @@ async function saveRequestChanges(event, row, type, message, button) {
             if (supportsRequestItemSnapshots) {
                 itemPayload.pack_snapshot = value("pack") || null;
                 itemPayload.price_snapshot = value("price") || null;
+            }
+
+            if (supportsRequestItemAmounts) {
+                const amount = Number(value("amount").replace(",", "."));
+                const unit = value("unit");
+                itemPayload.amount_value = Number.isFinite(amount) && amount > 0 && unit ? amount : null;
+                itemPayload.amount_unit = itemPayload.amount_value !== null ? unit : null;
             }
             const itemId = itemRow.dataset.requestItemId;
 
@@ -1947,7 +2237,12 @@ function renderProductRequests() {
                 name.textContent = item.product_name_snapshot;
                 itemCopy.append(name);
 
-                const details = [item.pack_snapshot, item.price_snapshot].filter(Boolean).join(" · ");
+                const amount = formatRequestItemAmount(item);
+                const details = [
+                    item.pack_snapshot,
+                    amount ? `Объём: ${amount}` : "",
+                    item.price_snapshot
+                ].filter(Boolean).join(" · ");
 
                 if (details) {
                     const detail = document.createElement("small");
@@ -1956,7 +2251,7 @@ function renderProductRequests() {
                 }
 
                 const quantity = document.createElement("span");
-                quantity.textContent = `Количество: ${item.quantity}`;
+                quantity.textContent = `Позиций: ${item.quantity}`;
                 li.append(itemCopy, quantity);
                 list.append(li);
             });
@@ -2003,6 +2298,17 @@ addPackOptionButton.addEventListener("click", () => {
 
     packOptionsList.append(createPackOptionRow());
     packOptionsList.lastElementChild?.querySelector("input")?.focus();
+    renderProductReadiness();
+});
+productForm.elements.predefined_pack_options_enabled.addEventListener("change", () => {
+    updateQuantityModeUi();
+    renderProductReadiness();
+});
+productForm.elements.custom_amount_enabled.addEventListener("change", renderProductReadiness);
+productForm.addEventListener("input", (event) => {
+    if (event.target !== productForm.elements.image) {
+        renderProductReadiness();
+    }
 });
 productForm.addEventListener("submit", saveProduct);
 deactivateProductButton.addEventListener("click", deactivateProduct);
@@ -2017,6 +2323,7 @@ productForm.elements.image.addEventListener("change", () => {
             ? `Выбрано файлов: ${files.length}. Нажмите «Загрузить выбранные фото».`
             : `Выбрано файлов: ${files.length}. Сначала создайте товар, затем они загрузятся автоматически.`
         : "Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.";
+    renderProductReadiness();
 });
 
 document.querySelectorAll("[data-request-search]").forEach((input) => {

@@ -471,6 +471,17 @@ a {
     font-weight: 900;
 }
 
+.cart-item-info .cart-item-amount,
+.order-item-info .cart-item-amount {
+    width: fit-content;
+    padding: 3px 7px;
+    border: 1px solid rgba(47, 107, 79, 0.22);
+    border-radius: 4px;
+    background: rgba(47, 107, 79, 0.08);
+    color: var(--accent-dark);
+    font-weight: 900;
+}
+
 .cart-item-controls {
     display: flex;
     align-items: center;
@@ -2738,6 +2749,93 @@ h3 {
     outline: 3px solid rgba(47, 107, 79, 0.14);
 }
 
+.product-mode-divider {
+    display: grid;
+    grid-template-columns: minmax(24px, 1fr) auto minmax(24px, 1fr);
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.product-mode-divider::before,
+.product-mode-divider::after {
+    height: 1px;
+    background: var(--border);
+    content: "";
+}
+
+.product-custom-amount {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid rgba(211, 190, 126, 0.48);
+    border-radius: 8px;
+    background: rgba(211, 190, 126, 0.1);
+}
+
+.product-custom-amount-title {
+    margin: 0;
+    font-size: 17px;
+}
+
+.product-custom-amount-controls {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(92px, 0.46fr) minmax(150px, 0.9fr);
+    gap: 10px;
+    align-items: end;
+}
+
+.product-custom-amount-field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.product-custom-amount-field > span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.product-custom-amount-field input,
+.product-custom-amount-field select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.product-custom-amount-field input:focus,
+.product-custom-amount-field select:focus {
+    border-color: var(--accent);
+    outline: 3px solid rgba(47, 107, 79, 0.14);
+}
+
+.product-custom-amount-controls .button {
+    min-width: 0;
+    min-height: 46px;
+    padding: 0 14px;
+    white-space: normal;
+}
+
+.product-custom-amount-error {
+    min-height: 18px;
+    margin: 0;
+    color: #a93826;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
 .product-facts {
     display: grid;
     grid-template-columns: minmax(90px, 0.35fr) minmax(0, 1fr);
@@ -3013,6 +3111,14 @@ h3 {
         grid-template-columns: 1fr;
     }
 
+    .product-custom-amount-controls {
+        grid-template-columns: minmax(0, 1fr) 92px;
+    }
+
+    .product-custom-amount-controls .button {
+        grid-column: 1 / -1;
+    }
+
     .request-modal-panel {
         padding: 22px 18px 28px;
     }
@@ -3046,6 +3152,14 @@ h3 {
 
     .product-facts {
         grid-template-columns: 90px minmax(0, 1fr);
+    }
+
+    .product-custom-amount-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .product-custom-amount-controls .button {
+        grid-column: auto;
     }
 }
 

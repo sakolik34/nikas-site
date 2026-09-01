@@ -11,7 +11,11 @@ type ProductRequestItem = {
     productSlug?: string;
     categoryId?: string;
     name?: string;
+    pack?: string;
+    price?: string;
     quantity?: number;
+    amountValue?: number | string;
+    amountUnit?: string;
     displayOrder?: number;
 };
 
@@ -50,6 +54,36 @@ function normalizeEmail(value: unknown) {
     return email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
 }
 
+function normalizeAmountValue(value: unknown) {
+    const normalized = Number(String(value ?? "").trim().replace(",", "."));
+
+    if (!Number.isFinite(normalized) || normalized <= 0 || normalized > 1000000) {
+        return null;
+    }
+
+    return Math.round(normalized * 1000) / 1000;
+}
+
+function formatAmount(value: number, unit: string) {
+    const formattedValue = new Intl.NumberFormat("ru-RU", {
+        maximumFractionDigits: 3
+    }).format(value);
+    const units: Record<string, string> = { l: "л", kg: "кг", t: "т" };
+    return `${formattedValue} ${units[unit] || unit}`;
+}
+
+function formatRequestDate(value: string, timeZone: string) {
+    return new Intl.DateTimeFormat("ru-RU", {
+        timeZone,
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+    }).format(new Date(value));
+}
+
 function isUuid(value: string) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -85,11 +119,25 @@ function assertValid(payload: ProductRequestPayload) {
 
     const normalizedItems = items.map((item, index) => {
         const itemName = cleanText(item.name, 220);
-        const quantity = Math.max(1, Math.min(999, Number(item.quantity) || 1));
+        const quantity = Math.max(1, Math.min(999, Math.floor(Number(item.quantity) || 1)));
         const productId = cleanText(item.productId, 80);
+        const hasAmountValue = item.amountValue !== undefined
+            && item.amountValue !== null
+            && String(item.amountValue).trim() !== "";
+        const hasAmountUnit = Boolean(cleanText(item.amountUnit, 4));
+        const amountValue = hasAmountValue ? normalizeAmountValue(item.amountValue) : null;
+        const amountUnit = hasAmountUnit ? cleanText(item.amountUnit, 4) : null;
 
         if (!itemName) {
             throw new Error("Product name is required.");
+        }
+
+        if (hasAmountValue !== hasAmountUnit) {
+            throw new Error("Product amount and unit must be provided together.");
+        }
+
+        if (hasAmountValue && (amountValue === null || !["l", "kg", "t"].includes(amountUnit || ""))) {
+            throw new Error("Product amount is invalid.");
         }
 
         return {
@@ -97,8 +145,12 @@ function assertValid(payload: ProductRequestPayload) {
             product_slug: cleanText(item.productSlug, 140) || null,
             category_id: cleanText(item.categoryId, 80) || null,
             product_name_snapshot: itemName,
+            pack: cleanText(item.pack, 220) || null,
+            price: cleanText(item.price, 120) || null,
             quantity,
-            display_order: Number.isFinite(item.displayOrder) ? Number(item.displayOrder) : index
+            amount_value: amountValue,
+            amount_unit: amountValue !== null ? amountUnit : null,
+            display_order: Number.isFinite(Number(item.displayOrder)) ? Number(item.displayOrder) : index
         };
     });
 
@@ -254,40 +306,87 @@ Deno.serve(async (request) => {
         .single();
 
     if (insertError || !requestRow) {
+        console.error("Could not insert product request", {
+            code: insertError?.code,
+            message: insertError?.message,
+            details: insertError?.details
+        });
         return json({ error: "Could not save request." }, 500);
     }
 
     const itemsToInsert = validated.items.map((item) => ({
-        ...item,
+        product_id: item.product_id,
+        product_slug: item.product_slug,
+        category_id: item.category_id,
+        product_name_snapshot: item.product_name_snapshot,
+        pack_snapshot: item.pack,
+        price_snapshot: item.price,
+        quantity: item.quantity,
+        amount_value: item.amount_value,
+        amount_unit: item.amount_unit,
+        display_order: item.display_order,
         request_id: requestRow.id
     }));
 
-    const { error: itemsError } = await supabase
+    let { error: itemsError } = await supabase
         .from("product_request_items")
         .insert(itemsToInsert);
 
+    if (itemsError && /pack_snapshot|price_snapshot|amount_value|amount_unit/i.test(itemsError.message || "")) {
+        const legacyItems = itemsToInsert.map(({
+            pack_snapshot,
+            price_snapshot,
+            amount_value,
+            amount_unit,
+            ...item
+        }) => item);
+        const legacyInsert = await supabase
+            .from("product_request_items")
+            .insert(legacyItems);
+        itemsError = legacyInsert.error;
+    }
+
     if (itemsError) {
+        console.error("Could not insert product request items", {
+            code: itemsError.code,
+            message: itemsError.message,
+            details: itemsError.details
+        });
+        await supabase.from("product_requests").delete().eq("id", requestRow.id);
         return json({ error: "Could not save request items." }, 500);
     }
 
     const productLines = validated.items.map((item, index) => {
-        return `${index + 1}. ${htmlEscape(item.product_name_snapshot)} - ${item.quantity}`;
+        const pack = item.pack ? ` (${htmlEscape(item.pack)})` : "";
+        const price = item.price ? ` · ${htmlEscape(item.price)}` : "";
+        const amount = item.amount_value !== null && item.amount_unit
+            ? ` — объём: ${htmlEscape(formatAmount(item.amount_value, item.amount_unit))}`
+            : "";
+        const positions = item.quantity > 1 || !amount
+            ? ` — количество позиций: ${item.quantity}`
+            : "";
+        return `${index + 1}. ${htmlEscape(item.product_name_snapshot)}${pack}${amount}${positions}${price}`;
     });
 
+    const requestNumber = String(requestRow.id).slice(0, 8).toUpperCase();
     const lines = [
         "<b>Новая товарная заявка Nikas</b>",
-        `ID: <code>${htmlEscape(requestRow.id)}</code>`,
-        `Имя: ${htmlEscape(validated.name)}`,
-        `Телефон: ${htmlEscape(validated.phone)}`,
-        validated.email ? `Email: ${htmlEscape(validated.email)}` : "",
-        validated.comment ? `Комментарий: ${htmlEscape(validated.comment)}` : "",
+        `<b>№${htmlEscape(requestNumber)}</b>`,
         "",
+        `Имя: ${htmlEscape(validated.name)}`,
         "<b>Товары:</b>",
         ...productLines,
+        `Комментарий: ${htmlEscape(validated.comment || "—")}`,
         "",
+        `Телефон: ${htmlEscape(validated.phone)}`,
+        `Почта: ${htmlEscape(validated.email || "—")}`,
         `Язык: ${htmlEscape(validated.language)}`,
-        `Дата: ${htmlEscape(requestRow.created_at)}`
-    ].filter(Boolean);
+        "",
+        `Дата(Киев): ${htmlEscape(formatRequestDate(requestRow.created_at, "Europe/Kyiv"))}`,
+        `Дата(Берлин): ${htmlEscape(formatRequestDate(requestRow.created_at, "Europe/Berlin"))}`,
+        "",
+        `ID: <code>${htmlEscape(requestRow.id)}</code>`
+    ];
 
     const telegram = await sendTelegram(lines.join("\n"));
 

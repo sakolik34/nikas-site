@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Nikas Admin</title>
     <link rel="icon" href="./icon_nikas-2.png">
-    <link rel="stylesheet" href="./admin.css?v=20260901">
+    <link rel="stylesheet" href="./admin.css?v=20260901-amount">
 </head>
 <body>
     <main class="admin-shell">
@@ -221,13 +221,37 @@
                             </fieldset>
                         </div>
 
-                        <div class="admin-pack-options-box">
+                        <section class="admin-purchase-modes" aria-labelledby="purchaseModesTitle">
+                            <div class="admin-section-heading">
+                                <h3 id="purchaseModesTitle">Как клиент выбирает объём</h3>
+                                <p>Включите готовые варианты, свободный ввод количества или оба способа. Настройка сохраняется отдельно для каждого товара.</p>
+                            </div>
+                            <div class="admin-purchase-mode-grid">
+                                <label class="admin-purchase-mode">
+                                    <input name="predefined_pack_options_enabled" type="checkbox" checked>
+                                    <span>
+                                        <b>Готовые варианты</b>
+                                        <small>Клиент выбирает из подготовленных строк: «мешок 25 кг», «канистра 20 л» и других.</small>
+                                    </span>
+                                </label>
+                                <label class="admin-purchase-mode">
+                                    <input name="custom_amount_enabled" type="checkbox">
+                                    <span>
+                                        <b>Свободное количество</b>
+                                        <small>Клиент сам вводит число и выбирает единицу: л, кг или т.</small>
+                                    </span>
+                                </label>
+                            </div>
+                            <p class="admin-file-hint" id="purchaseModesHint"></p>
+                        </section>
+
+                        <div class="admin-pack-options-box" id="predefinedPackOptionsSection">
                             <div class="admin-section-heading">
                                 <h3>Варианты объёма и фасовки</h3>
-                                <p>Добавляйте свободные варианты: «мешок 10 кг», «25 кг», «50 кг», «канистра 1 л», «20 л». Эти варианты появятся в окне товара и попадут в заявку клиента.</p>
+                                <p>Добавляйте готовые варианты: «мешок 10 кг», «25 кг», «50 кг», «канистра 1 л», «20 л». Они появятся в окне товара и попадут в заявку клиента.</p>
                             </div>
                             <div class="admin-pack-options-head">
-                                <p class="admin-file-hint" id="packOptionsHint">Если вариантов нет, сайт покажет общий текст из поля «Фасовка и минимальный объём».</p>
+                                <p class="admin-file-hint" id="packOptionsHint">Если режим готовых вариантов включён, заполните хотя бы один вариант.</p>
                                 <button class="admin-secondary" id="addPackOptionButton" type="button">Добавить вариант</button>
                             </div>
                             <div class="admin-pack-options-list" id="packOptionsList"></div>
@@ -247,6 +271,17 @@
                             <p class="admin-file-hint" id="imageSelectionHint">Файлы не выбраны. До 10 фотографий, каждая не больше 5 МБ.</p>
                             <div class="admin-images" id="productImages"></div>
                         </div>
+
+                        <section class="admin-readiness" id="productReadiness" aria-labelledby="productReadinessTitle">
+                            <div class="admin-readiness-head">
+                                <div>
+                                    <h3 id="productReadinessTitle">Готовность товара</h3>
+                                    <p>Проверка объясняет, что мешает сохранению или публикации и что желательно улучшить.</p>
+                                </div>
+                                <strong id="productReadinessStatus">Проверяем</strong>
+                            </div>
+                            <ul class="admin-readiness-list" id="productReadinessList"></ul>
+                        </section>
 
                         <p class="admin-message" id="productFormMessage" aria-live="polite"></p>
 
@@ -318,8 +353,8 @@
     </main>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js?v=20260901"></script>
-    <script src="./nikas-api.js?v=20260901"></script>
-    <script src="./admin.js?v=20260901"></script>
+    <script src="./i18n.js?v=20260901-amount"></script>
+    <script src="./nikas-api.js?v=20260901-amount"></script>
+    <script src="./admin.js?v=20260901-amount"></script>
 </body>
 </html>

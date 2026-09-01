@@ -77,6 +77,8 @@ create table if not exists public.products (
     price_ru text,
     price_en text,
     image_disclaimer_enabled boolean not null default false,
+    predefined_pack_options_enabled boolean not null default true,
+    custom_amount_enabled boolean not null default false,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
@@ -85,6 +87,8 @@ alter table public.products add column if not exists price_uk text;
 alter table public.products add column if not exists price_ru text;
 alter table public.products add column if not exists price_en text;
 alter table public.products add column if not exists image_disclaimer_enabled boolean not null default false;
+alter table public.products add column if not exists predefined_pack_options_enabled boolean not null default true;
+alter table public.products add column if not exists custom_amount_enabled boolean not null default false;
 
 create table if not exists public.product_images (
     id uuid primary key default gen_random_uuid(),
@@ -205,12 +209,25 @@ create table if not exists public.product_request_items (
     pack_snapshot text check (pack_snapshot is null or char_length(pack_snapshot) <= 220),
     price_snapshot text check (price_snapshot is null or char_length(price_snapshot) <= 120),
     quantity integer not null default 1 check (quantity between 1 and 999),
+    amount_value numeric(12,3),
+    amount_unit text,
     display_order integer not null default 0,
     created_at timestamptz not null default now()
 );
 
 alter table public.product_request_items add column if not exists pack_snapshot text;
 alter table public.product_request_items add column if not exists price_snapshot text;
+alter table public.product_request_items add column if not exists amount_value numeric(12,3);
+alter table public.product_request_items add column if not exists amount_unit text;
+alter table public.product_request_items drop constraint if exists product_request_items_amount_pair_check;
+alter table public.product_request_items add constraint product_request_items_amount_pair_check check (
+    (amount_value is null and amount_unit is null)
+    or (
+        amount_value > 0
+        and amount_value <= 1000000
+        and amount_unit in ('l', 'kg', 't')
+    )
+);
 
 create table if not exists public.submission_rate_limits (
     rate_key text primary key,

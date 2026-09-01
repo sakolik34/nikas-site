@@ -25,6 +25,16 @@ function clampQuantity(value) {
     return Math.max(1, Math.min(999, Math.floor(Number(value) || 1)));
 }
 
+function normalizeAmountValue(value) {
+    const normalized = Number(String(value ?? "").trim().replace(",", "."));
+
+    if (!Number.isFinite(normalized) || normalized <= 0 || normalized > 1000000) {
+        return null;
+    }
+
+    return Math.round(normalized * 1000) / 1000;
+}
+
 function i18n() {
     return window.NikasI18n;
 }
@@ -39,6 +49,10 @@ function normalizeRequestItem(item) {
     }
 
     const id = String(item.id || item.productId || item.slug);
+    const amountValue = normalizeAmountValue(item.amountValue ?? item.amount_value);
+    const requestedUnit = String(item.amountUnit ?? item.amount_unit ?? "");
+    const amountUnit = ["l", "kg", "t"].includes(requestedUnit) ? requestedUnit : "";
+    const hasCustomAmount = amountValue !== null && amountUnit;
 
     return {
         id,
@@ -50,7 +64,9 @@ function normalizeRequestItem(item) {
         price: item.price || "",
         shortDescription: item.shortDescription || "",
         imageUrl: item.imageUrl || "",
-        quantity: clampQuantity(item.quantity)
+        quantity: clampQuantity(item.quantity),
+        amountValue: hasCustomAmount ? amountValue : null,
+        amountUnit: hasCustomAmount ? amountUnit : ""
     };
 }
 
@@ -107,6 +123,24 @@ function getItemPack(item) {
 
 function getItemPrice(item) {
     return getLocalizedItemValue(item.price);
+}
+
+function getItemAmount(item) {
+    const value = normalizeAmountValue(item.amountValue);
+    const unitKey = {
+        l: "product.amountUnitL",
+        kg: "product.amountUnitKg",
+        t: "product.amountUnitT"
+    }[item.amountUnit];
+
+    if (value === null || !unitKey) {
+        return "";
+    }
+
+    const language = document.documentElement.lang || "ru";
+    const locale = language === "uk" ? "uk-UA" : language === "en" ? "en-US" : "ru-RU";
+    const formatted = new Intl.NumberFormat(locale, { maximumFractionDigits: 3 }).format(value);
+    return `${formatted} ${t(unitKey)}`;
 }
 
 function getPluralLabel(count) {
@@ -210,6 +244,10 @@ function renderRequestMenu() {
             info.append(createText("span", "", getItemPack(item)));
         }
 
+        if (getItemAmount(item)) {
+            info.append(createText("span", "cart-item-amount", getItemAmount(item)));
+        }
+
         info.append(createText("span", "cart-item-price", getItemPrice(item) || t("product.priceAvailability")));
 
         top.append(createItemImage(item, "cart-item-image"), info);
@@ -297,6 +335,10 @@ function renderOrderItems() {
 
         if (getItemPack(item)) {
             info.append(createText("span", "", getItemPack(item)));
+        }
+
+        if (getItemAmount(item)) {
+            info.append(createText("span", "cart-item-amount", getItemAmount(item)));
         }
 
         info.append(createText("span", "cart-item-price", getItemPrice(item) || t("product.priceAvailability")));
@@ -576,6 +618,8 @@ function serializeOrderItems(items) {
         pack: getItemPack(item),
         price: getItemPrice(item),
         quantity: item.quantity,
+        amountValue: item.amountValue,
+        amountUnit: item.amountUnit,
         displayOrder: index
     }));
 }

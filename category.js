@@ -93,11 +93,19 @@ function getProductId(product) {
 }
 
 function productPackOptions(product) {
+    if (product.predefinedPackOptionsEnabled === false) {
+        return [];
+    }
+
     return Array.isArray(product.packOptions)
         ? product.packOptions
             .filter((packOption) => packOption.active !== false)
             .sort((first, second) => (first.displayOrder || 0) - (second.displayOrder || 0))
         : [];
+}
+
+function productSupportsCustomAmount(product) {
+    return product.customAmountEnabled === true;
 }
 
 function packOptionLabel(packOption) {
@@ -110,7 +118,14 @@ function packSummary(product) {
         .filter(Boolean);
 
     if (options.length) {
-        return options.slice(0, 4).join(" / ");
+        const fixedSummary = options.slice(0, 4).join(" / ");
+        return productSupportsCustomAmount(product)
+            ? `${fixedSummary} · ${t("product.customUnitsSummary")}`
+            : fixedSummary;
+    }
+
+    if (productSupportsCustomAmount(product)) {
+        return t("product.customUnitsSummary");
     }
 
     return field(product, "pack");
@@ -135,21 +150,49 @@ function selectedProductQuantity() {
     return clampQuantity(input?.value);
 }
 
-function requestProduct(product, packOption = null, quantity = 1) {
+function normalizeAmountValue(value) {
+    const normalized = Number(String(value ?? "").trim().replace(",", "."));
+
+    if (!Number.isFinite(normalized) || normalized <= 0 || normalized > 1000000) {
+        return null;
+    }
+
+    return Math.round(normalized * 1000) / 1000;
+}
+
+function requestProduct(product, options = {}) {
+    const {
+        packOption = null,
+        quantity = 1,
+        amountValue = null,
+        amountUnit = ""
+    } = options;
     const selectedPack = packOptionLabel(packOption);
     const productId = getProductId(product);
+    const normalizedAmount = normalizeAmountValue(amountValue);
+    const normalizedUnit = ["l", "kg", "t"].includes(amountUnit) ? amountUnit : "";
+    const hasCustomAmount = normalizedAmount !== null && normalizedUnit;
+    const amountKey = hasCustomAmount
+        ? `${String(normalizedAmount).replace(".", "-")}-${normalizedUnit}`
+        : "";
 
     return {
-        id: packOption ? `${productId}:${packOption.id}` : productId,
+        id: packOption
+            ? `${productId}:pack:${packOption.id}`
+            : amountKey
+                ? `${productId}:amount:${amountKey}`
+                : productId,
         productId,
         slug: product.slug,
         name: product.name,
-        pack: selectedPack || product.pack,
+        pack: selectedPack || (hasCustomAmount ? "" : product.pack),
         price: product.price,
         shortDescription: product.shortDescription,
         imageUrl: product.imageUrl,
         categoryId: product.categoryId,
-        quantity: clampQuantity(quantity)
+        quantity: clampQuantity(quantity),
+        amountValue: hasCustomAmount ? normalizedAmount : null,
+        amountUnit: hasCustomAmount ? normalizedUnit : ""
     };
 }
 
@@ -190,6 +233,7 @@ function createProductCard(product) {
     const productName = field(product, "name");
     const productPack = packSummary(product);
     const hasPackOptions = productPackOptions(product).length > 0;
+    const requiresChoice = hasPackOptions || productSupportsCustomAmount(product);
     const category = findProductCategory(product);
 
     const card = document.createElement("article");
@@ -238,7 +282,7 @@ function createProductCard(product) {
     addButton.type = "button";
     addButton.textContent = t("cart.add");
     addButton.addEventListener("click", () => {
-        if (hasPackOptions) {
+        if (requiresChoice) {
             openProductModal(product, addButton);
             return;
         }
@@ -252,7 +296,7 @@ function createProductCard(product) {
     askButton.type = "button";
     askButton.textContent = t("cart.ask");
     askButton.addEventListener("click", () => {
-        if (hasPackOptions) {
+        if (requiresChoice) {
             openProductModal(product, askButton);
             return;
         }
@@ -464,7 +508,12 @@ function renderProductModal(product) {
     const priceValue = createTextElement("dd", "", field(product, "price") || t("product.priceAvailability"));
     facts.append(packTerm, packValue, priceTerm, priceValue);
 
+    const customAmountEnabled = productSupportsCustomAmount(product);
+    let purchaseMode = packOptions.length ? "fixed" : customAmountEnabled ? "custom" : "direct";
     let packChooser = null;
+    let customAmountInput = null;
+    let customAmountUnit = null;
+    let customAmountError = null;
 
     if (packOptions.length) {
         packChooser = document.createElement("fieldset");
@@ -485,6 +534,9 @@ function renderProductModal(product) {
             input.value = String(packOption.id);
             input.dataset.productPackOption = "true";
             input.checked = index === 0;
+            input.addEventListener("change", () => {
+                purchaseMode = "fixed";
+            });
 
             const text = createTextElement("span", "", packOptionLabel(packOption));
             label.append(input, text);
@@ -494,55 +546,145 @@ function renderProductModal(product) {
         packChooser.append(legend, hint, choices);
     }
 
-    const quantityBox = document.createElement("section");
-    quantityBox.className = "product-request-quantity";
+    let quantityBox = null;
 
-    const quantityTitle = createTextElement("h3", "", t("product.quantityTitle"));
-    const quantityHint = createTextElement("p", "", t("product.quantityHint"));
+    if (packOptions.length) {
+        quantityBox = document.createElement("section");
+        quantityBox.className = "product-request-quantity";
 
-    const quantityControls = document.createElement("div");
-    quantityControls.className = "product-quantity-controls";
+        const quantityTitle = createTextElement("h3", "", t("product.quantityTitle"));
+        const quantityHint = createTextElement("p", "", t("product.quantityHint"));
+        const quantityControls = document.createElement("div");
+        quantityControls.className = "product-quantity-controls";
 
-    const addOneButton = createTextElement("button", "button primary", t("product.quantityAddOne"));
-    addOneButton.type = "button";
-    addOneButton.addEventListener("click", () => {
-        window.NikasRequest?.addItem(requestProduct(product, selectedPackOption(), 1), { open: false });
-        brieflyConfirm(addOneButton, "cart.added", "product.quantityAddOne");
-    });
+        const addOneButton = createTextElement("button", "button primary", t("product.quantityAddOne"));
+        addOneButton.type = "button";
+        addOneButton.addEventListener("click", () => {
+            purchaseMode = "fixed";
+            window.NikasRequest?.addItem(requestProduct(product, {
+                packOption: selectedPackOption(),
+                quantity: 1
+            }), { open: false });
+            brieflyConfirm(addOneButton, "cart.added", "product.quantityAddOne");
+        });
 
-    const customQuantity = document.createElement("label");
-    customQuantity.className = "product-quantity-custom";
+        const customQuantity = document.createElement("label");
+        customQuantity.className = "product-quantity-custom";
+        const quantityLabel = createTextElement("span", "", t("product.quantityCustomLabel"));
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.inputMode = "numeric";
+        quantityInput.min = "1";
+        quantityInput.max = "999";
+        quantityInput.step = "1";
+        quantityInput.value = "1";
+        quantityInput.dataset.productQuantity = "true";
+        quantityInput.addEventListener("input", () => {
+            purchaseMode = "fixed";
+            const cleanValue = quantityInput.value.replace(/[^\d]/g, "").slice(0, 3);
+            quantityInput.value = cleanValue;
+        });
+        quantityInput.addEventListener("blur", () => {
+            quantityInput.value = String(clampQuantity(quantityInput.value));
+        });
 
-    const quantityLabel = createTextElement("span", "", t("product.quantityCustomLabel"));
-    const quantityInput = document.createElement("input");
-    quantityInput.type = "number";
-    quantityInput.inputMode = "numeric";
-    quantityInput.min = "1";
-    quantityInput.max = "999";
-    quantityInput.step = "1";
-    quantityInput.value = "1";
-    quantityInput.dataset.productQuantity = "true";
-    quantityInput.addEventListener("input", () => {
-        const cleanValue = quantityInput.value.replace(/[^\d]/g, "").slice(0, 3);
-        quantityInput.value = cleanValue;
-    });
-    quantityInput.addEventListener("blur", () => {
-        quantityInput.value = String(clampQuantity(quantityInput.value));
-    });
+        const addCustomButton = createTextElement("button", "button secondary", t("product.quantityAddCustom"));
+        addCustomButton.type = "button";
+        addCustomButton.addEventListener("click", () => {
+            purchaseMode = "fixed";
+            window.NikasRequest?.addItem(requestProduct(product, {
+                packOption: selectedPackOption(),
+                quantity: selectedProductQuantity()
+            }), { open: false });
+            brieflyConfirm(addCustomButton, "cart.added", "product.quantityAddCustom");
+        });
 
-    const addCustomButton = createTextElement("button", "button secondary", t("product.quantityAddCustom"));
-    addCustomButton.type = "button";
-    addCustomButton.addEventListener("click", () => {
-        window.NikasRequest?.addItem(
-            requestProduct(product, selectedPackOption(), selectedProductQuantity()),
-            { open: false }
-        );
-        brieflyConfirm(addCustomButton, "cart.added", "product.quantityAddCustom");
-    });
+        customQuantity.append(quantityLabel, quantityInput);
+        quantityControls.append(addOneButton, customQuantity, addCustomButton);
+        quantityBox.append(quantityTitle, quantityHint, quantityControls);
+    }
 
-    customQuantity.append(quantityLabel, quantityInput);
-    quantityControls.append(addOneButton, customQuantity, addCustomButton);
-    quantityBox.append(quantityTitle, quantityHint, quantityControls);
+    let customAmountBox = null;
+
+    const selectedCustomAmountItem = () => {
+        const amountValue = normalizeAmountValue(customAmountInput?.value);
+        const amountUnit = customAmountUnit?.value || "";
+
+        if (amountValue === null || !["l", "kg", "t"].includes(amountUnit)) {
+            customAmountError.textContent = t("product.customAmountInvalid");
+            customAmountInput?.focus();
+            return null;
+        }
+
+        customAmountError.textContent = "";
+        return requestProduct(product, { amountValue, amountUnit, quantity: 1 });
+    };
+
+    if (customAmountEnabled) {
+        customAmountBox = document.createElement("section");
+        customAmountBox.className = "product-custom-amount";
+
+        if (!packOptions.length) {
+            customAmountBox.append(createTextElement("h3", "product-custom-amount-title", t("product.customAmountOnlyTitle")));
+        }
+
+        const amountControls = document.createElement("div");
+        amountControls.className = "product-custom-amount-controls";
+        const amountField = document.createElement("label");
+        amountField.className = "product-custom-amount-field";
+        amountField.append(createTextElement("span", "", t("product.customAmountLabel")));
+        customAmountInput = document.createElement("input");
+        customAmountInput.type = "text";
+        customAmountInput.inputMode = "decimal";
+        customAmountInput.autocomplete = "off";
+        customAmountInput.maxLength = 14;
+        customAmountInput.placeholder = t("product.customAmountPlaceholder");
+        customAmountInput.addEventListener("input", () => {
+            purchaseMode = "custom";
+            customAmountInput.value = customAmountInput.value
+                .replace(/[^\d.,]/g, "")
+                .replace(/([.,].*)[.,]/g, "$1");
+            customAmountError.textContent = "";
+        });
+        amountField.append(customAmountInput);
+
+        const unitField = document.createElement("label");
+        unitField.className = "product-custom-amount-field";
+        unitField.append(createTextElement("span", "", t("product.customAmountUnitLabel")));
+        customAmountUnit = document.createElement("select");
+        [["l", "product.amountUnitL"], ["kg", "product.amountUnitKg"], ["t", "product.amountUnitT"]]
+            .forEach(([value, labelKey]) => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = t(labelKey);
+                option.selected = value === "kg";
+                customAmountUnit.append(option);
+            });
+        customAmountUnit.addEventListener("change", () => {
+            purchaseMode = "custom";
+            customAmountError.textContent = "";
+        });
+        unitField.append(customAmountUnit);
+
+        const addAmountButton = createTextElement("button", "button primary", t("product.customAmountAdd"));
+        addAmountButton.type = "button";
+        addAmountButton.addEventListener("click", () => {
+            purchaseMode = "custom";
+            const item = selectedCustomAmountItem();
+
+            if (!item) {
+                return;
+            }
+
+            window.NikasRequest?.addItem(item, { open: false });
+            brieflyConfirm(addAmountButton, "cart.added", "product.customAmountAdd");
+        });
+
+        customAmountError = createTextElement("p", "product-custom-amount-error", "");
+        customAmountError.setAttribute("aria-live", "polite");
+        amountControls.append(amountField, unitField, addAmountButton);
+        customAmountBox.append(amountControls, customAmountError);
+    }
 
     const descriptionTitle = createTextElement("h3", "", t("product.descriptionTitle"));
     const description = createTextElement(
@@ -558,10 +700,19 @@ function renderProductModal(product) {
     askButton.type = "button";
     askButton.addEventListener("click", () => {
         const returnFocus = productModalReturnFocus;
-        const packOption = selectedPackOption();
-        const quantity = selectedProductQuantity();
+        const item = purchaseMode === "custom"
+            ? selectedCustomAmountItem()
+            : requestProduct(product, {
+                packOption: selectedPackOption(),
+                quantity: selectedProductQuantity()
+            });
+
+        if (!item) {
+            return;
+        }
+
         closeProductModal();
-        window.NikasRequest?.askProduct(requestProduct(product, packOption, quantity), { returnFocus });
+        window.NikasRequest?.askProduct(item, { returnFocus });
     });
 
     actions.append(askButton);
@@ -571,7 +722,19 @@ function renderProductModal(product) {
         content.append(packChooser);
     }
 
-    content.append(quantityBox, facts, descriptionTitle, description, actions);
+    if (quantityBox) {
+        content.append(quantityBox);
+    }
+
+    if (quantityBox && customAmountBox) {
+        content.append(createTextElement("div", "product-mode-divider", t("product.orCustomAmount")));
+    }
+
+    if (customAmountBox) {
+        content.append(customAmountBox);
+    }
+
+    content.append(facts, descriptionTitle, description, actions);
     layout.append(gallery, content);
     panel.append(closeButton, layout);
 }

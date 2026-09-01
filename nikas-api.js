@@ -210,6 +210,12 @@
             active: product.active !== false,
             displayOrder: product.display_order ?? product.displayOrder ?? 0,
             imageDisclaimerEnabled: Boolean(product.image_disclaimer_enabled ?? product.imageDisclaimerEnabled),
+            predefinedPackOptionsEnabled: product.predefined_pack_options_enabled
+                ?? product.predefinedPackOptionsEnabled
+                ?? true,
+            customAmountEnabled: product.custom_amount_enabled
+                ?? product.customAmountEnabled
+                ?? false,
             name: product.name || {
                 uk: product.name_uk,
                 ru: product.name_ru,
@@ -405,18 +411,37 @@
         return String(value || "").trim().replace(/\s+/g, " ").slice(0, maxLength);
     }
 
+    function normalizeAmountValue(value) {
+        const normalized = Number(String(value ?? "").trim().replace(",", "."));
+
+        if (!Number.isFinite(normalized) || normalized <= 0 || normalized > 1000000) {
+            return null;
+        }
+
+        return Math.round(normalized * 1000) / 1000;
+    }
+
     function normalizeProductRequestItems(items) {
         return (Array.isArray(items) ? items : [])
-            .map((item, index) => ({
-                productId: cleanPayloadText(item.productId, 80),
-                productSlug: cleanPayloadText(item.productSlug, 140),
-                categoryId: cleanPayloadText(item.categoryId, 80),
-                name: cleanPayloadText(item.name, 220),
-                pack: cleanPayloadText(item.pack, 220),
-                price: cleanPayloadText(item.price, 120),
-                quantity: clampQuantity(item.quantity),
-                displayOrder: Number.isFinite(Number(item.displayOrder)) ? Number(item.displayOrder) : index
-            }))
+            .map((item, index) => {
+                const amountValue = normalizeAmountValue(item.amountValue);
+                const amountUnit = ["l", "kg", "t"].includes(String(item.amountUnit))
+                    ? String(item.amountUnit)
+                    : "";
+
+                return {
+                    productId: cleanPayloadText(item.productId, 80),
+                    productSlug: cleanPayloadText(item.productSlug, 140),
+                    categoryId: cleanPayloadText(item.categoryId, 80),
+                    name: cleanPayloadText(item.name, 220),
+                    pack: cleanPayloadText(item.pack, 220),
+                    price: cleanPayloadText(item.price, 120),
+                    quantity: clampQuantity(item.quantity),
+                    amountValue: amountValue !== null && amountUnit ? amountValue : null,
+                    amountUnit: amountValue !== null && amountUnit ? amountUnit : "",
+                    displayOrder: Number.isFinite(Number(item.displayOrder)) ? Number(item.displayOrder) : index
+                };
+            })
             .filter((item) => item.name);
     }
 

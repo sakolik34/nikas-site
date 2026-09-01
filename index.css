@@ -1064,17 +1064,17 @@ h3 {
 }
 
 .category-spices .category-visual {
-    --category-image: url("./spices.jpg");
+    --category-image: url("./spices.jpg?v=20260901");
     background-position: center 45%;
 }
 
 .category-flavor .category-visual {
-    --category-image: url("./flavor enhancer.jpg");
+    --category-image: url("./flavor enhancer.jpg?v=20260901");
     background-position: center;
 }
 
 .category-protein .category-visual {
-    --category-image: url("./protein.jpg");
+    --category-image: url("./protein.jpg?v=20260901");
     background-position: center;
 }
 
@@ -2083,9 +2083,9 @@ h3 {
         top: 0;
         min-height: var(--hero-stage-height);
         background:
-            linear-gradient(90deg, rgba(5, 7, 5, 0.08) 0%, rgba(5, 7, 5, 0.54) 46%, rgba(5, 7, 5, 0.78) 100%),
-            linear-gradient(180deg, rgba(5, 7, 5, 0.26) 0%, rgba(5, 7, 5, 0.08) 38%, rgba(5, 7, 5, 0.7) 100%),
-            url("./rightside.jpg") left center / cover no-repeat,
+            linear-gradient(90deg, rgba(5, 7, 5, 0.38), rgba(5, 7, 5, 0.12) 50%, rgba(5, 7, 5, 0.38)),
+            linear-gradient(180deg, rgba(5, 7, 5, 0.5) 0%, rgba(5, 7, 5, 0.04) 42%, rgba(5, 7, 5, 0.68) 100%),
+            url("./hero-mobile.jpg?v=20260901") center center / cover no-repeat,
             #050705;
     }
 
@@ -2099,8 +2099,8 @@ h3 {
 
     .hero-shade {
         background:
-            linear-gradient(90deg, rgba(5, 7, 5, 0.04) 0%, rgba(5, 7, 5, 0.46) 48%, rgba(5, 7, 5, 0.82) 100%),
-            linear-gradient(180deg, rgba(5, 7, 5, 0.18) 0%, rgba(5, 7, 5, 0.02) 42%, rgba(5, 7, 5, 0.72) 100%);
+            linear-gradient(90deg, rgba(5, 7, 5, 0.22), transparent 50%, rgba(5, 7, 5, 0.22)),
+            linear-gradient(180deg, rgba(5, 7, 5, 0.22) 0%, rgba(5, 7, 5, 0.02) 42%, rgba(5, 7, 5, 0.48) 100%);
     }
 
     .hero-reveal {

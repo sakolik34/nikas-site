@@ -20,6 +20,7 @@ let productModal = null;
 let activeProduct = null;
 let productModalReturnFocus = null;
 let syncingProductHistory = false;
+let activeImageDisclaimerControl = null;
 
 function t(key, paramsValue) {
     return window.NikasI18n?.t(key, paramsValue) || key;
@@ -197,7 +198,7 @@ function requestProduct(product, options = {}) {
     };
 }
 
-function createProductVisual(product, className = "") {
+function createProductVisual(product, className = "", { showDisclaimer = true } = {}) {
     const visual = document.createElement("div");
     visual.className = `product-photo ${className}`.trim();
 
@@ -208,7 +209,7 @@ function createProductVisual(product, className = "") {
         image.loading = "lazy";
         visual.append(image);
 
-        if (product.imageDisclaimerEnabled) {
+        if (showDisclaimer && product.imageDisclaimerEnabled) {
             visual.append(createTextElement("span", "product-image-disclaimer", t("product.imageDisclaimer")));
         }
     } else {
@@ -218,6 +219,60 @@ function createProductVisual(product, className = "") {
     }
 
     return visual;
+}
+
+function closeImageDisclaimer(control = activeImageDisclaimerControl) {
+    if (!control) {
+        return;
+    }
+
+    control.classList.remove("is-open");
+    control.querySelector("[data-image-disclaimer-toggle]")?.setAttribute("aria-expanded", "false");
+    control.querySelector(".product-disclaimer-popover")?.setAttribute("aria-hidden", "true");
+
+    if (activeImageDisclaimerControl === control) {
+        activeImageDisclaimerControl = null;
+    }
+}
+
+function createImageDisclaimerControl(product) {
+    if (!product.imageUrl || !product.imageDisclaimerEnabled) {
+        return null;
+    }
+
+    const control = document.createElement("div");
+    control.className = "product-disclaimer-control";
+
+    const button = document.createElement("button");
+    button.className = "product-disclaimer-button";
+    button.type = "button";
+    button.dataset.imageDisclaimerToggle = "true";
+    button.textContent = "!";
+    button.setAttribute("aria-label", t("product.imageDisclaimerOpen"));
+    button.setAttribute("aria-expanded", "false");
+    button.title = t("product.imageDisclaimerOpen");
+
+    const popover = createTextElement("p", "product-disclaimer-popover", t("product.imageDisclaimer"));
+    popover.setAttribute("role", "status");
+    popover.setAttribute("aria-hidden", "true");
+
+    button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const isOpen = !control.classList.contains("is-open");
+        closeImageDisclaimer();
+
+        if (isOpen) {
+            control.classList.add("is-open");
+            button.setAttribute("aria-expanded", "true");
+            popover.setAttribute("aria-hidden", "false");
+            activeImageDisclaimerControl = control;
+        }
+    });
+
+    control.append(button, popover);
+    return control;
 }
 
 function brieflyConfirm(button, messageKey, defaultKey) {
@@ -273,7 +328,7 @@ function createProductCard(product) {
 
     const detailsHint = createTextElement("span", "product-open-hint", t("product.details"));
     body.append(meta, title, description, details, detailsHint);
-    openButton.append(createProductVisual(product), body);
+    openButton.append(createProductVisual(product, "", { showDisclaimer: false }), body);
 
     const actions = document.createElement("div");
     actions.className = "product-actions";
@@ -308,7 +363,14 @@ function createProductCard(product) {
     });
 
     actions.append(addButton, askButton);
-    card.append(openButton, actions);
+
+    const disclaimerControl = createImageDisclaimerControl(product);
+    if (disclaimerControl) {
+        card.classList.add("has-image-disclaimer");
+        card.append(openButton, disclaimerControl, actions);
+    } else {
+        card.append(openButton, actions);
+    }
     return card;
 }
 
@@ -339,6 +401,18 @@ function productFromLocation() {
 
     return pageState.products.find((product) => product.slug === value || String(product.id) === value) || null;
 }
+
+document.addEventListener("click", (event) => {
+    if (activeImageDisclaimerControl && !activeImageDisclaimerControl.contains(event.target)) {
+        closeImageDisclaimer();
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        closeImageDisclaimer();
+    }
+});
 
 function closeProductModal({ updateHistory = true } = {}) {
     if (!productModal || productModal.hidden) {

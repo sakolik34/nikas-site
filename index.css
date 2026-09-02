@@ -1912,23 +1912,22 @@ h3 {
     cursor: pointer;
 }
 
-.contact-submit:disabled {
-    background: var(--accent);
-    color: #ffffff;
-    cursor: not-allowed;
-    opacity: 1;
-}
-
-.contact-submit:disabled span {
-    color: #ffffff;
-    -webkit-text-fill-color: #ffffff;
-    opacity: 1;
-}
-
+.contact-submit,
+.contact-submit:enabled,
+.contact-submit:disabled,
 .contact-submit.is-submitted,
 .contact-submit.is-submitted:disabled {
-    background: #245c42;
-    border-color: #245c42;
+    border-color: var(--accent) !important;
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+.contact-submit span,
+.contact-submit:disabled span {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff;
+    opacity: 1 !important;
 }
 
 .modal-open {

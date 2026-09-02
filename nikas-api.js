@@ -468,7 +468,7 @@
             productId: cleanPayloadText(formValues.productId, 80),
             name: cleanPayloadText(formValues.name, 120),
             body: cleanPayloadText(formValues.body, 2000),
-            rating: Number.isInteger(rating) ? rating : 0,
+            rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
             website: cleanPayloadText(formValues.website, 120),
             sourcePath: window.location.pathname
         };

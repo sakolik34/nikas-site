@@ -1601,6 +1601,10 @@ async function loadProductRequests() {
 }
 
 function reviewProductLabel(productId) {
+    if (!productId) {
+        return "Товар не указан";
+    }
+
     const product = products.find((item) => item.id === productId);
     return product ? (localField(product, "name") || product.slug) : "Товар удалён из каталога";
 }
@@ -1660,7 +1664,7 @@ function fillReviewForm(reviewId) {
     renderReviewProductOptions(review.product_id);
     reviewAdminForm.elements.id.value = review.id;
     reviewAdminForm.elements.author_name.value = review.author_name || "";
-    reviewAdminForm.elements.rating.value = String(review.rating);
+    reviewAdminForm.elements.rating.value = review.rating ? String(review.rating) : "5";
     reviewAdminForm.elements.body.value = review.body || "";
     reviewAdminForm.elements.status.value = review.status;
     reviewAdminFormMode.textContent = "Редактирование отзыва";
@@ -1726,8 +1730,8 @@ function renderReviews() {
 
         const rating = document.createElement("p");
         rating.className = "review-admin-stars";
-        rating.textContent = "★".repeat(review.rating) + "☆".repeat(5 - review.rating);
-        rating.setAttribute("aria-label", `Оценка ${review.rating} из 5`);
+        rating.textContent = review.rating ? "★".repeat(review.rating) + "☆".repeat(5 - review.rating) : "Оценка не указана";
+        rating.setAttribute("aria-label", review.rating ? `Оценка ${review.rating} из 5` : "Оценка не указана");
 
         const author = document.createElement("p");
         author.textContent = `Автор: ${review.author_name || "Покупатель Nikas"}`;

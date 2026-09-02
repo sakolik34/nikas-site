@@ -8,6 +8,7 @@
     const reviewProductId = document.getElementById("reviewProductId");
     const reviewFormMessage = document.getElementById("reviewFormMessage");
     const reviewSubmit = document.getElementById("reviewSubmit");
+    const reviewRatingOptions = document.getElementById("reviewRatingOptions");
 
     if (!reviewsGrid || !reviewDialog || !reviewForm) {
         return;
@@ -16,6 +17,7 @@
     let products = [];
     let reviews = [];
     let submissionKey = "";
+    let selectedRating = 0;
 
     function t(key, params) {
         return window.NikasI18n?.t(key, params) || key;
@@ -66,8 +68,14 @@
     }
 
     function starText(rating) {
-        const amount = Math.max(1, Math.min(5, Number(rating) || 1));
+        const amount = Math.max(0, Math.min(5, Number(rating) || 0));
         return "★".repeat(amount) + "☆".repeat(5 - amount);
+    }
+
+    function paintRating(value) {
+        reviewRatingOptions?.querySelectorAll("label").forEach((label, index) => {
+            label.classList.toggle("is-lit", index < value);
+        });
     }
 
     function renderReviews() {
@@ -89,7 +97,8 @@
 
             const rating = document.createElement("p");
             rating.className = "review-stars";
-            rating.setAttribute("aria-label", `${t("reviews.ratingLabel")} ${review.rating}/5`);
+            rating.hidden = !review.rating;
+            rating.setAttribute("aria-label", `${t("reviews.ratingLabel")} ${review.rating || 0}/5`);
             rating.textContent = starText(review.rating);
 
             const body = document.createElement("p");
@@ -129,11 +138,6 @@
     }
 
     openReviewDialog.addEventListener("click", () => {
-        if (!products.length) {
-            setMessage(t("reviews.empty"), "error");
-            return;
-        }
-
         reviewDialog.showModal();
         document.body.classList.add("modal-open");
         reviewProductId.focus();
@@ -146,6 +150,22 @@
         }
     });
     reviewDialog.addEventListener("cancel", () => document.body.classList.remove("modal-open"));
+
+    reviewRatingOptions?.querySelectorAll("label").forEach((label) => {
+        const input = label.querySelector("input");
+        const rating = Number(input?.value || 0);
+
+        label.addEventListener("pointerenter", () => paintRating(rating));
+        label.addEventListener("click", () => {
+            selectedRating = rating;
+            paintRating(selectedRating);
+        });
+        input?.addEventListener("change", () => {
+            selectedRating = Number(input.value);
+            paintRating(selectedRating);
+        });
+    });
+    reviewRatingOptions?.addEventListener("pointerleave", () => paintRating(selectedRating));
 
     reviewForm.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -176,6 +196,8 @@
 
             reviewForm.reset();
             submissionKey = "";
+            selectedRating = 0;
+            paintRating(0);
             renderProducts();
             setMessage(t("reviews.success"), "success");
             window.setTimeout(closeDialog, 2600);

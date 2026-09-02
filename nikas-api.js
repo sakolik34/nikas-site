@@ -76,10 +76,6 @@
         return createClientFromGlobal();
     }
 
-    function fallbackCatalog() {
-        return window.NIKAS_FALLBACK_CATALOG || window.NIKAS_CATALOG || { categories: [], products: [] };
-    }
-
     function toCamelCategory(category) {
         return {
             id: category.id || category.slug,
@@ -271,10 +267,7 @@
         const supabaseClient = await getClientAsync();
 
         if (!supabaseClient) {
-            return {
-                source: "fallback",
-                categories: fallbackCatalog().categories.map(toCamelCategory)
-            };
+            throw new Error("Catalog service is unavailable.");
         }
 
         const { data, error } = await supabaseClient
@@ -297,15 +290,7 @@
         const supabaseClient = await getClientAsync();
 
         if (!supabaseClient) {
-            const products = fallbackCatalog().products
-                .filter((product) => product.active !== false)
-                .filter((product) => categoryId === "all" || product.categoryId === categoryId)
-                .sort((first, second) => (first.displayOrder || 0) - (second.displayOrder || 0));
-
-            return {
-                source: "fallback",
-                products: products.map(toCamelProduct)
-            };
+            throw new Error("Catalog service is unavailable.");
         }
 
         let query = supabaseClient

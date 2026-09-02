@@ -885,6 +885,17 @@ function renderCategoryPage() {
         return;
     }
 
+    if (pageState.error) {
+        categoryBadge.textContent = t("category.page.badge");
+        categoryTitle.textContent = t("product.networkError");
+        categoryDescription.textContent = t("product.networkError");
+        productSectionTitle.textContent = t("category.page.positions");
+        productCount.textContent = t("product.networkError");
+        emptyState.hidden = false;
+        emptyState.textContent = t("product.networkError");
+        return;
+    }
+
     if (!category) {
         categoryTitle.textContent = t("category.notFound.title");
         categoryDescription.textContent = t("category.notFound.description");
@@ -933,12 +944,9 @@ async function loadCategoryPage() {
             loading: false
         };
     } catch (error) {
-        const fallback = window.NIKAS_FALLBACK_CATALOG || { categories: [], products: [] };
         pageState = {
-            categories: fallback.categories.map(window.NikasApi.normalizeCategory),
-            products: fallback.products
-                .filter((product) => selectedCategoryId === "all" || product.categoryId === selectedCategoryId)
-                .map(window.NikasApi.normalizeProduct),
+            categories: [],
+            products: [],
             error,
             loading: false
         };

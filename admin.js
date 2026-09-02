@@ -1637,6 +1637,72 @@ function renderReviewProductOptions(selectedId = "") {
     select.value = products.some((product) => product.id === selectedId) ? selectedId : "";
 }
 
+function todayReviewDate() {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Kyiv",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(new Date());
+    const value = Object.fromEntries(parts
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value]));
+
+    return `${value.year}-${value.month}-${value.day}`;
+}
+
+function reviewDateValue(value) {
+    const date = String(value || "");
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(date)) {
+        return date.slice(0, 10);
+    }
+
+    return todayReviewDate();
+}
+
+function formatReviewDate(value) {
+    return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+    }).format(new Date(`${reviewDateValue(value)}T12:00:00`));
+}
+
+function reviewTraits(value) {
+    return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function selectedReviewTraits() {
+    return Array.from(reviewAdminForm.querySelectorAll('input[name="traits"]:checked'), (input) => input.value);
+}
+
+function setSelectedReviewTraits(value) {
+    const selected = new Set(reviewTraits(value));
+    reviewAdminForm.querySelectorAll('input[name="traits"]').forEach((input) => {
+        input.checked = selected.has(input.value);
+    });
+}
+
+function reviewTraitLabel(value) {
+    return {
+        current_price: "Актуальная цена",
+        fast_shipping: "Быстро отправили",
+        good_service: "Хорошее обслуживание",
+        accurate_description: "Актуальное описание",
+        in_stock: "Товар был в наличии",
+        polite_seller: "Вежливый продавец",
+        quick_contact: "Быстро связались",
+        not_shipped: "Товар не отправили",
+        higher_price: "Цена выше заявленной",
+        out_of_stock: "Товара не было в наличии",
+        no_contact: "Со мной не связались",
+        different_from_description: "Товар не соответствовал описанию",
+        slow_shipping: "Отправляли дольше обещанного",
+        rude_seller: "Невежливый продавец"
+    }[value] || value;
+}
+
 function resetReviewFormState() {
     if (!reviewAdminForm) {
         return;
@@ -1645,7 +1711,9 @@ function resetReviewFormState() {
     reviewAdminForm.reset();
     reviewAdminForm.elements.id.value = "";
     reviewAdminForm.elements.rating.value = "5";
+    reviewAdminForm.elements.review_date.value = todayReviewDate();
     reviewAdminForm.elements.status.value = "published";
+    setSelectedReviewTraits([]);
     reviewAdminFormMode.textContent = "Новый отзыв";
     reviewAdminFormTitle.textContent = "Добавить отзыв";
     saveReviewButton.textContent = "Сохранить отзыв";
@@ -1665,7 +1733,9 @@ function fillReviewForm(reviewId) {
     reviewAdminForm.elements.id.value = review.id;
     reviewAdminForm.elements.author_name.value = review.author_name || "";
     reviewAdminForm.elements.rating.value = review.rating ? String(review.rating) : "5";
+    reviewAdminForm.elements.review_date.value = reviewDateValue(review.review_date || review.created_at);
     reviewAdminForm.elements.body.value = review.body || "";
+    setSelectedReviewTraits(review.review_traits);
     reviewAdminForm.elements.status.value = review.status;
     reviewAdminFormMode.textContent = "Редактирование отзыва";
     reviewAdminFormTitle.textContent = reviewProductLabel(review.product_id);
@@ -1720,7 +1790,7 @@ function renderReviews() {
         identity.className = "request-identity";
         const id = document.createElement("p");
         id.className = "request-id";
-        id.textContent = `№ ${review.id.slice(0, 8).toUpperCase()} · ${formatRequestDate(review.created_at)}`;
+        id.textContent = `№ ${review.id.slice(0, 8).toUpperCase()} · ${formatReviewDate(review.review_date || review.created_at)}`;
         const title = document.createElement("h3");
         title.textContent = reviewProductLabel(review.product_id);
         identity.append(id, title);
@@ -1738,6 +1808,16 @@ function renderReviews() {
         const body = document.createElement("p");
         body.className = "request-message";
         body.textContent = review.body || "Текстовый комментарий не оставлен.";
+
+        const traits = reviewTraits(review.review_traits);
+        const traitList = document.createElement("ul");
+        traitList.className = "review-admin-traits";
+        traitList.hidden = traits.length === 0;
+        traits.forEach((trait) => {
+            const item = document.createElement("li");
+            item.textContent = reviewTraitLabel(trait);
+            traitList.append(item);
+        });
 
         const actions = document.createElement("div");
         actions.className = "review-admin-actions";
@@ -1758,7 +1838,7 @@ function renderReviews() {
         ));
 
         actions.append(edit, statusButton);
-        card.append(head, rating, author, body, actions);
+        card.append(head, rating, author, body, traitList, actions);
         reviewsList.append(card);
     });
 }
@@ -1772,7 +1852,7 @@ async function loadReviews() {
     const { data, error } = await supabaseAdmin
         .from("product_reviews")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order("review_date", { ascending: false })
         .limit(160);
 
     if (error) {
@@ -1807,7 +1887,7 @@ async function saveReview(event) {
     event.preventDefault();
 
     if (!reviewAdminForm.checkValidity()) {
-        setMessage(reviewAdminFormMessage, "Выберите товар и оценку.", "error");
+        setMessage(reviewAdminFormMessage, "Выберите товар, оценку и дату.", "error");
         reviewAdminForm.reportValidity();
         return;
     }
@@ -1817,7 +1897,9 @@ async function saveReview(event) {
         product_id: reviewAdminForm.elements.product_id.value,
         author_name: reviewAdminForm.elements.author_name.value.trim() || null,
         rating: Number(reviewAdminForm.elements.rating.value),
+        review_date: reviewAdminForm.elements.review_date.value,
         body: reviewAdminForm.elements.body.value.trim() || null,
+        review_traits: selectedReviewTraits(),
         status: reviewAdminForm.elements.status.value,
         language: window.NikasI18n?.getLanguage?.() || "ru",
         source: "admin"
@@ -1849,10 +1931,24 @@ async function deleteReview() {
     }
 
     deleteReviewButton.disabled = true;
-    const { error } = await supabaseAdmin.from("product_reviews").delete().eq("id", reviewId);
+    const { data, error } = await supabaseAdmin
+        .from("product_reviews")
+        .delete()
+        .eq("id", reviewId)
+        .select("id");
 
     if (error) {
         setMessage(reviewAdminFormMessage, error.message, "error");
+        deleteReviewButton.disabled = false;
+        return;
+    }
+
+    if (!data?.length) {
+        setMessage(
+            reviewAdminFormMessage,
+            "Удаление не разрешено базой данных. Выполните миграцию 20260902_review_traits_and_delete.sql в Supabase SQL Editor.",
+            "error"
+        );
         deleteReviewButton.disabled = false;
         return;
     }

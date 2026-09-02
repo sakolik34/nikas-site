@@ -7,7 +7,7 @@
     <title>Nikas - пищевые продукты</title>
     <link rel="icon" href="./icon_nikas-2.png">
     <script src="./site-features.js?v=20260902-rating"></script>
-    <link rel="stylesheet" href="./index.css?v=20260902-rating">
+    <link rel="stylesheet" href="./index.css?v=20260902-review-traits">
 </head>
 <body>
     <header class="site-header">
@@ -241,6 +241,11 @@
 
             <div class="reviews-grid" id="reviewsGrid" aria-live="polite"></div>
             <p class="reviews-empty" id="reviewsEmpty" hidden data-i18n="reviews.empty">Здесь скоро появятся отзывы покупателей.</p>
+            <nav class="reviews-pagination" id="reviewsPagination" aria-label="Страницы отзывов" hidden>
+                <button class="reviews-page-button" id="reviewsPreviousPage" type="button" aria-label="Предыдущая страница" title="Предыдущая страница" data-i18n-aria-label="reviews.previousPage" data-i18n-title="reviews.previousPage">←</button>
+                <p id="reviewsPaginationStatus" aria-live="polite"></p>
+                <button class="reviews-page-button" id="reviewsNextPage" type="button" aria-label="Следующая страница" title="Следующая страница" data-i18n-aria-label="reviews.nextPage" data-i18n-title="reviews.nextPage">→</button>
+            </nav>
 
             <div class="review-cta">
                 <div>
@@ -281,6 +286,29 @@
                 <span data-i18n="reviews.textLabel">Текст отзыва (необязательно)</span>
                 <textarea name="body" rows="5" maxlength="2000" data-i18n-placeholder="reviews.textPlaceholder" placeholder="Расскажите, что вам понравилось"></textarea>
             </label>
+            <fieldset class="review-traits-fieldset">
+                <legend data-i18n="reviews.traitsLabel">Что особенно запомнилось (необязательно)</legend>
+                <div class="review-traits-group review-traits-positive">
+                    <span data-i18n="reviews.traitsPositive">Положительное</span>
+                    <label><input name="traits" type="checkbox" value="current_price"><span data-i18n="reviews.trait.currentPrice">Актуальная цена</span></label>
+                    <label><input name="traits" type="checkbox" value="fast_shipping"><span data-i18n="reviews.trait.fastShipping">Быстро отправили</span></label>
+                    <label><input name="traits" type="checkbox" value="good_service"><span data-i18n="reviews.trait.goodService">Хорошее обслуживание</span></label>
+                    <label><input name="traits" type="checkbox" value="accurate_description"><span data-i18n="reviews.trait.accurateDescription">Актуальное описание</span></label>
+                    <label><input name="traits" type="checkbox" value="in_stock"><span data-i18n="reviews.trait.inStock">Товар был в наличии</span></label>
+                    <label><input name="traits" type="checkbox" value="polite_seller"><span data-i18n="reviews.trait.politeSeller">Вежливый продавец</span></label>
+                    <label><input name="traits" type="checkbox" value="quick_contact"><span data-i18n="reviews.trait.quickContact">Быстро связались</span></label>
+                </div>
+                <div class="review-traits-group review-traits-negative">
+                    <span data-i18n="reviews.traitsNegative">Можно улучшить</span>
+                    <label><input name="traits" type="checkbox" value="not_shipped"><span data-i18n="reviews.trait.notShipped">Товар не отправили</span></label>
+                    <label><input name="traits" type="checkbox" value="higher_price"><span data-i18n="reviews.trait.higherPrice">Цена выше заявленной</span></label>
+                    <label><input name="traits" type="checkbox" value="out_of_stock"><span data-i18n="reviews.trait.outOfStock">Товара не было в наличии</span></label>
+                    <label><input name="traits" type="checkbox" value="no_contact"><span data-i18n="reviews.trait.noContact">Со мной не связались</span></label>
+                    <label><input name="traits" type="checkbox" value="different_from_description"><span data-i18n="reviews.trait.differentFromDescription">Товар не соответствовал описанию</span></label>
+                    <label><input name="traits" type="checkbox" value="slow_shipping"><span data-i18n="reviews.trait.slowShipping">Отправляли дольше обещанного</span></label>
+                    <label><input name="traits" type="checkbox" value="rude_seller"><span data-i18n="reviews.trait.rudeSeller">Невежливый продавец</span></label>
+                </div>
+            </fieldset>
             <label class="form-honeypot" aria-hidden="true">
                 <span>Не заполняйте это поле</span>
                 <input name="website" type="text" tabindex="-1" autocomplete="off">
@@ -395,11 +423,11 @@
     </nav>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js?v=20260902-rating"></script>
+    <script src="./i18n.js?v=20260902-review-traits"></script>
     <script src="./catalog-data.js?v=20260901"></script>
-    <script src="./nikas-api.js?v=20260902-rating"></script>
+    <script src="./nikas-api.js?v=20260902-review-traits"></script>
     <script src="./cart.js?v=20260901-amount"></script>
     <script src="./index.js?v=20260902-rating"></script>
-    <script src="./reviews.js?v=20260902-rating"></script>
+    <script src="./reviews.js?v=20260902-review-traits"></script>
 </body>
 </html>

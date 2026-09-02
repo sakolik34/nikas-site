@@ -1405,6 +1405,7 @@ h3 {
 .reviews-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    align-items: start;
     gap: 18px;
     margin-top: 34px;
 }
@@ -1414,6 +1415,7 @@ h3 {
     align-content: start;
     gap: 14px;
     min-height: 238px;
+    min-width: 0;
     padding: 22px;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -1429,9 +1431,11 @@ h3 {
 }
 
 .review-card-meta strong {
+    min-width: 0;
     color: var(--accent);
     font-size: 14px;
     line-height: 1.35;
+    overflow-wrap: anywhere;
 }
 
 .review-card-meta time {
@@ -1456,6 +1460,84 @@ h3 {
     font-size: 15px;
     line-height: 1.6;
     overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.review-traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.review-traits li {
+    max-width: 100%;
+    padding: 7px 10px;
+    border: 1px solid rgba(47, 107, 79, 0.2);
+    border-radius: 999px;
+    background: rgba(47, 107, 79, 0.07);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.review-traits-fieldset {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.review-traits-fieldset legend {
+    margin-bottom: 2px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.review-traits-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.review-traits-group > span {
+    flex-basis: 100%;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.review-traits-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
+.review-traits-group label:has(input:checked) {
+    border-color: rgba(47, 107, 79, 0.48);
+    background: rgba(47, 107, 79, 0.1);
+}
+
+.review-traits-group input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent);
 }
 
 .review-author {
@@ -1470,6 +1552,50 @@ h3 {
     color: var(--muted);
     font-size: 16px;
     font-weight: 700;
+}
+
+.reviews-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 30px;
+}
+
+.reviews-pagination p {
+    min-width: 138px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.reviews-page-button {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--accent);
+    font-size: 23px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.reviews-page-button:hover:not(:disabled),
+.reviews-page-button:focus-visible:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(47, 107, 79, 0.08);
+}
+
+.reviews-page-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
 }
 
 .review-cta {

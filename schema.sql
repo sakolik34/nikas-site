@@ -215,6 +215,31 @@ create table if not exists public.product_request_items (
     created_at timestamptz not null default now()
 );
 
+create table if not exists public.product_reviews (
+    id uuid primary key default gen_random_uuid(),
+    product_id uuid references public.products(id) on delete cascade,
+    author_name text check (author_name is null or char_length(author_name) between 1 and 120),
+    rating smallint check (rating between 1 and 5),
+    body text check (body is null or char_length(body) between 1 and 2000),
+    review_traits text[] not null default '{}'::text[] check (
+        review_traits <@ array[
+            'current_price', 'fast_shipping', 'good_service', 'accurate_description',
+            'in_stock', 'polite_seller', 'quick_contact', 'not_shipped',
+            'higher_price', 'out_of_stock', 'no_contact', 'different_from_description',
+            'slow_shipping', 'rude_seller'
+        ]::text[]
+    ),
+    language text not null default 'ru' check (language in ('uk', 'ru', 'en')),
+    review_date date not null default current_date,
+    status text not null default 'pending' check (status in ('pending', 'published', 'hidden')),
+    source text not null default 'website' check (source in ('website', 'admin')),
+    source_path text,
+    idempotency_key text unique,
+    request_fingerprint text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
 alter table public.product_request_items add column if not exists pack_snapshot text;
 alter table public.product_request_items add column if not exists price_snapshot text;
 alter table public.product_request_items add column if not exists amount_value numeric(12,3);
@@ -246,6 +271,9 @@ create index if not exists product_pack_options_product_order_idx on public.prod
 create index if not exists contact_requests_status_created_idx on public.contact_requests (status, created_at desc);
 create index if not exists product_requests_status_created_idx on public.product_requests (status, created_at desc);
 create index if not exists product_request_items_request_idx on public.product_request_items (request_id, display_order);
+create index if not exists product_reviews_status_created_idx on public.product_reviews (status, created_at desc);
+create index if not exists product_reviews_status_review_date_idx on public.product_reviews (status, review_date desc);
+create index if not exists product_reviews_product_created_idx on public.product_reviews (product_id, created_at desc);
 
 drop trigger if exists admin_profiles_updated_at on public.admin_profiles;
 create trigger admin_profiles_updated_at
@@ -280,6 +308,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists product_requests_updated_at on public.product_requests;
 create trigger product_requests_updated_at
 before update on public.product_requests
+for each row execute function public.set_updated_at();
+
+drop trigger if exists product_reviews_updated_at on public.product_reviews;
+create trigger product_reviews_updated_at
+before update on public.product_reviews
 for each row execute function public.set_updated_at();
 
 insert into public.categories (
@@ -397,6 +430,7 @@ alter table public.product_pack_options enable row level security;
 alter table public.contact_requests enable row level security;
 alter table public.product_requests enable row level security;
 alter table public.product_request_items enable row level security;
+alter table public.product_reviews enable row level security;
 alter table public.submission_rate_limits enable row level security;
 
 grant usage on schema public to anon, authenticated;
@@ -404,6 +438,7 @@ grant select on public.categories to anon, authenticated;
 grant select on public.products to anon, authenticated;
 grant select on public.product_images to anon, authenticated;
 grant select on public.product_pack_options to anon, authenticated;
+grant select on public.product_reviews to anon;
 grant select on public.admin_profiles to authenticated;
 grant select, insert, update, delete on public.categories to authenticated;
 grant select, insert, update, delete on public.products to authenticated;
@@ -412,6 +447,7 @@ grant select, insert, update, delete on public.product_pack_options to authentic
 grant select, update on public.contact_requests to authenticated;
 grant select, update on public.product_requests to authenticated;
 grant select, insert, update, delete on public.product_request_items to authenticated;
+grant select, insert, update, delete on public.product_reviews to authenticated;
 
 -- Only Supabase Edge Functions use service_role. It is never sent to browsers.
 -- Reset privileges first so old deployments cannot leave broader grants behind.
@@ -419,10 +455,12 @@ revoke all on public.submission_rate_limits from service_role;
 revoke all on public.contact_requests from service_role;
 revoke all on public.product_requests from service_role;
 revoke all on public.product_request_items from service_role;
+revoke all on public.product_reviews from service_role;
 grant select, insert, update on public.submission_rate_limits to service_role;
 grant select, insert, update on public.contact_requests to service_role;
 grant select, insert, update, delete on public.product_requests to service_role;
 grant insert on public.product_request_items to service_role;
+grant select, insert, update on public.product_reviews to service_role;
 
 drop policy if exists "Public can read active categories" on public.categories;
 create policy "Public can read active categories"
@@ -521,6 +559,29 @@ drop policy if exists "Public can create product request items" on public.produc
 drop policy if exists "Admins can manage product request items" on public.product_request_items;
 create policy "Admins can manage product request items"
 on public.product_request_items for all
+to authenticated
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
+
+drop policy if exists "Public can read published product reviews" on public.product_reviews;
+create policy "Public can read published product reviews"
+on public.product_reviews for select
+to anon, authenticated
+using (
+    status = 'published'
+    and (
+        product_id is null
+        or exists (
+            select 1 from public.products
+            where products.id = product_reviews.product_id
+              and products.active = true
+        )
+    )
+);
+
+drop policy if exists "Admins can manage product reviews" on public.product_reviews;
+create policy "Admins can manage product reviews"
+on public.product_reviews for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));

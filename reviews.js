@@ -9,6 +9,10 @@
     const reviewFormMessage = document.getElementById("reviewFormMessage");
     const reviewSubmit = document.getElementById("reviewSubmit");
     const reviewRatingOptions = document.getElementById("reviewRatingOptions");
+    const reviewsPagination = document.getElementById("reviewsPagination");
+    const reviewsPreviousPage = document.getElementById("reviewsPreviousPage");
+    const reviewsNextPage = document.getElementById("reviewsNextPage");
+    const reviewsPaginationStatus = document.getElementById("reviewsPaginationStatus");
 
     if (!reviewsGrid || !reviewDialog || !reviewForm) {
         return;
@@ -18,6 +22,8 @@
     let reviews = [];
     let submissionKey = "";
     let selectedRating = 0;
+    let currentPage = 1;
+    const reviewsPerPage = 6;
 
     function t(key, params) {
         return window.NikasI18n?.t(key, params) || key;
@@ -60,16 +66,45 @@
         const language = window.NikasI18n?.getLanguage?.() || "ru";
         const locale = { uk: "uk-UA", ru: "ru-RU", en: "en-US" }[language] || "ru-RU";
 
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))
+            ? new Date(`${value}T12:00:00`)
+            : new Date(value);
+
         return new Intl.DateTimeFormat(locale, {
             day: "2-digit",
             month: "long",
             year: "numeric"
-        }).format(new Date(value));
+        }).format(date);
     }
 
     function starText(rating) {
         const amount = Math.max(0, Math.min(5, Number(rating) || 0));
         return "★".repeat(amount) + "☆".repeat(5 - amount);
+    }
+
+    function reviewTraits(value) {
+        return Array.isArray(value) ? value.filter(Boolean) : [];
+    }
+
+    function reviewTraitLabel(value) {
+        const key = {
+            current_price: "currentPrice",
+            fast_shipping: "fastShipping",
+            good_service: "goodService",
+            accurate_description: "accurateDescription",
+            in_stock: "inStock",
+            polite_seller: "politeSeller",
+            quick_contact: "quickContact",
+            not_shipped: "notShipped",
+            higher_price: "higherPrice",
+            out_of_stock: "outOfStock",
+            no_contact: "noContact",
+            different_from_description: "differentFromDescription",
+            slow_shipping: "slowShipping",
+            rude_seller: "rudeSeller"
+        }[value];
+
+        return key ? t(`reviews.trait.${key}`) : value;
     }
 
     function paintRating(value) {
@@ -82,7 +117,22 @@
         reviewsGrid.replaceChildren();
         reviewsEmpty.hidden = reviews.length > 0;
 
-        reviews.forEach((review) => {
+        const totalPages = Math.max(1, Math.ceil(reviews.length / reviewsPerPage));
+        currentPage = Math.min(currentPage, totalPages);
+        const start = (currentPage - 1) * reviewsPerPage;
+        const pageReviews = reviews.slice(start, start + reviewsPerPage);
+
+        if (reviewsPagination) {
+            reviewsPagination.hidden = reviews.length <= reviewsPerPage;
+            reviewsPreviousPage.disabled = currentPage === 1;
+            reviewsNextPage.disabled = currentPage === totalPages;
+            reviewsPaginationStatus.textContent = t("reviews.pageStatus", {
+                current: currentPage,
+                total: totalPages
+            });
+        }
+
+        pageReviews.forEach((review) => {
             const card = document.createElement("article");
             card.className = "review-card";
 
@@ -91,8 +141,8 @@
             const product = document.createElement("strong");
             product.textContent = productName(review.product);
             const date = document.createElement("time");
-            date.dateTime = review.created_at;
-            date.textContent = formatDate(review.created_at);
+            date.dateTime = review.review_date || review.created_at;
+            date.textContent = formatDate(review.review_date || review.created_at);
             meta.append(product, date);
 
             const rating = document.createElement("p");
@@ -105,11 +155,21 @@
             body.className = "review-body";
             body.textContent = review.body || t("reviews.noText");
 
+            const traits = reviewTraits(review.review_traits);
+            const traitList = document.createElement("ul");
+            traitList.className = "review-traits";
+            traitList.hidden = traits.length === 0;
+            traits.forEach((trait) => {
+                const item = document.createElement("li");
+                item.textContent = reviewTraitLabel(trait);
+                traitList.append(item);
+            });
+
             const author = document.createElement("p");
             author.className = "review-author";
             author.textContent = review.author_name || t("reviews.unknownAuthor");
 
-            card.append(meta, rating, body, author);
+            card.append(meta, rating, body, traitList, author);
             reviewsGrid.append(card);
         });
     }
@@ -122,6 +182,7 @@
             ]);
             products = catalog.products || [];
             reviews = publishedReviews;
+            currentPage = 1;
             renderProducts();
             renderReviews();
         } catch (error) {
@@ -167,6 +228,21 @@
     });
     reviewRatingOptions?.addEventListener("pointerleave", () => paintRating(selectedRating));
 
+    reviewsPreviousPage?.addEventListener("click", () => {
+        if (currentPage > 1) {
+            currentPage -= 1;
+            renderReviews();
+        }
+    });
+
+    reviewsNextPage?.addEventListener("click", () => {
+        const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+        if (currentPage < totalPages) {
+            currentPage += 1;
+            renderReviews();
+        }
+    });
+
     reviewForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -191,6 +267,7 @@
                 name: reviewForm.elements.name.value,
                 rating: reviewForm.elements.rating.value,
                 body: reviewForm.elements.body.value,
+                traits: Array.from(reviewForm.querySelectorAll('input[name="traits"]:checked'), (input) => input.value),
                 website: reviewForm.elements.website.value
             });
 

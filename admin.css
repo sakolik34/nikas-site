@@ -399,6 +399,82 @@ body:not(.admin-authenticated) .admin-app {
     line-height: 1;
 }
 
+.review-admin-traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.review-admin-traits li {
+    max-width: 100%;
+    padding: 6px 9px;
+    border: 1px solid rgba(47, 107, 79, 0.24);
+    border-radius: 999px;
+    background: rgba(47, 107, 79, 0.08);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.admin-review-traits {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.admin-review-traits legend {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.admin-review-traits .review-traits-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-review-traits .review-traits-group > span {
+    flex-basis: 100%;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.admin-review-traits .review-traits-group label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
+.admin-review-traits .review-traits-group label:has(input:checked) {
+    border-color: rgba(47, 107, 79, 0.48);
+    background: rgba(47, 107, 79, 0.1);
+}
+
+.admin-review-traits input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
 .review-admin-actions {
     display: flex;
     flex-wrap: wrap;

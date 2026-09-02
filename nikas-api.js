@@ -468,6 +468,7 @@
             productId: cleanPayloadText(formValues.productId, 80),
             name: cleanPayloadText(formValues.name, 120),
             body: cleanPayloadText(formValues.body, 2000),
+            traits: Array.isArray(formValues.traits) ? formValues.traits : [],
             rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
             website: cleanPayloadText(formValues.website, 120),
             sourcePath: window.location.pathname
@@ -495,10 +496,10 @@
 
         const { data, error } = await supabaseClient
             .from("product_reviews")
-            .select("id, product_id, author_name, rating, body, language, created_at, product:products(id, slug, name_uk, name_ru, name_en)")
+            .select("id, product_id, author_name, rating, body, review_traits, language, review_date, created_at, product:products(id, slug, name_uk, name_ru, name_en)")
             .eq("status", "published")
-            .order("created_at", { ascending: false })
-            .limit(24);
+            .order("review_date", { ascending: false })
+            .limit(60);
 
         if (error) {
             throw error;

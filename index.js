@@ -89,6 +89,14 @@ function setFormMessage(text, type = "") {
     contactFormMessage.classList.toggle("success", type === "success");
 }
 
+function setContactSubmitLabel(key) {
+    const label = contactSubmit?.querySelector("span");
+
+    if (label) {
+        label.textContent = t(key);
+    }
+}
+
 function clearContactSuccessTimer() {
     if (!contactSuccessTimer) {
         return;
@@ -107,8 +115,11 @@ function showContactSuccessMessage(result = {}) {
         : t("form.success");
 
     setFormMessage(message, "success");
+    contactSubmit?.classList.add("is-submitted");
+    setContactSubmitLabel("form.sent");
     contactSuccessTimer = window.setTimeout(() => {
         contactSuccessTimer = null;
+        contactSubmit?.classList.remove("is-submitted");
         updateContactSubmitState();
     }, 7000);
 }
@@ -131,16 +142,22 @@ function updateContactSubmitState() {
 
     if (contactSuccessTimer) {
         contactSubmit.disabled = true;
+        contactSubmit.classList.add("is-submitted");
+        setContactSubmitLabel("form.sent");
         return;
     }
 
+    contactSubmit.classList.remove("is-submitted");
     contactSubmit.disabled = !isContactFormReady();
 
     if (contactSending) {
+        setContactSubmitLabel("form.sending");
         setFormMessage(t("form.sending"));
     } else if (contactSubmit.disabled) {
+        setContactSubmitLabel("form.submit");
         setFormMessage(t("form.fillRequired"));
     } else {
+        setContactSubmitLabel("form.submit");
         setFormMessage(t("form.ready"), "success");
     }
 }
@@ -165,6 +182,7 @@ async function handleContactSubmit(event) {
 
     contactSending = true;
     contactSubmit.disabled = true;
+    setContactSubmitLabel("form.sending");
     setFormMessage(t("form.sending"));
 
     let submitted = false;
@@ -199,6 +217,7 @@ if (contactForm) {
 window.addEventListener("nikas:languagechange", () => {
     setMenuState(sidebar?.classList.contains("open"));
     if (contactSuccessTimer) {
+        setContactSubmitLabel("form.sent");
         setFormMessage(t("form.success"), "success");
         return;
     }

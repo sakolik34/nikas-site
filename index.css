@@ -1919,6 +1919,18 @@ h3 {
     opacity: 1;
 }
 
+.contact-submit:disabled span {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    opacity: 1;
+}
+
+.contact-submit.is-submitted,
+.contact-submit.is-submitted:disabled {
+    background: #245c42;
+    border-color: #245c42;
+}
+
 .modal-open {
     overflow: hidden;
 }

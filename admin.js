@@ -1718,6 +1718,7 @@ function resetReviewFormState() {
     reviewAdminFormTitle.textContent = "Добавить отзыв";
     saveReviewButton.textContent = "Сохранить отзыв";
     deleteReviewButton.hidden = true;
+    deleteReviewButton.disabled = false;
     setMessage(reviewAdminFormMessage, "");
     renderReviewProductOptions();
 }
@@ -1741,6 +1742,7 @@ function fillReviewForm(reviewId) {
     reviewAdminFormTitle.textContent = reviewProductLabel(review.product_id);
     saveReviewButton.textContent = "Сохранить изменения";
     deleteReviewButton.hidden = false;
+    deleteReviewButton.disabled = false;
     setMessage(reviewAdminFormMessage, "");
     reviewAdminForm.scrollIntoView({ behavior: "smooth", block: "start" });
     reviewAdminForm.elements.author_name.focus();

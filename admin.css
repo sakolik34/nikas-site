@@ -363,6 +363,48 @@ body:not(.admin-authenticated) .admin-app {
     gap: 12px;
 }
 
+.review-toolbar {
+    grid-template-columns: minmax(220px, 1fr) minmax(160px, 220px) auto auto;
+}
+
+.review-admin-grid {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(380px, 1.1fr);
+}
+
+.review-editor {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+}
+
+.review-editor > label {
+    display: grid;
+    gap: 7px;
+}
+
+.review-editor textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.review-admin-card {
+    gap: 12px;
+}
+
+.review-admin-stars {
+    margin: 0 !important;
+    color: #b3751f !important;
+    font-size: 20px;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.review-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .admin-card,
 .request-card {
     display: grid;
@@ -1243,12 +1285,20 @@ label small {
     .request-editor-wide {
         grid-column: auto;
     }
+
+    .review-admin-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 720px) {
     .admin-panel-head {
         align-items: start;
         flex-direction: column;
+    }
+
+    .review-toolbar {
+        grid-template-columns: 1fr;
     }
 
     .admin-pack-options-head {

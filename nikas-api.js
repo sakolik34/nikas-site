@@ -459,6 +459,21 @@
         };
     }
 
+    function prepareReviewPayload(formValues) {
+        const rating = Number(formValues.rating);
+
+        return {
+            idempotencyKey: formValues.idempotencyKey || createIdempotencyKey("review"),
+            language: currentLanguage(),
+            productId: cleanPayloadText(formValues.productId, 80),
+            name: cleanPayloadText(formValues.name, 120),
+            body: cleanPayloadText(formValues.body, 2000),
+            rating: Number.isInteger(rating) ? rating : 0,
+            website: cleanPayloadText(formValues.website, 120),
+            sourcePath: window.location.pathname
+        };
+    }
+
     async function submitContactRequest(formValues) {
         const config = getConfig();
         const payload = prepareContactPayload(formValues);
@@ -471,14 +486,43 @@
         return invokeFunction(config.edgeFunctions?.submitProductRequest || "submit-product-request", payload);
     }
 
+    async function fetchPublishedReviews() {
+        const supabaseClient = await getClientAsync();
+
+        if (!supabaseClient) {
+            return [];
+        }
+
+        const { data, error } = await supabaseClient
+            .from("product_reviews")
+            .select("id, product_id, author_name, rating, body, language, created_at, product:products(id, slug, name_uk, name_ru, name_en)")
+            .eq("status", "published")
+            .order("created_at", { ascending: false })
+            .limit(24);
+
+        if (error) {
+            throw error;
+        }
+
+        return data || [];
+    }
+
+    async function submitReview(formValues) {
+        const config = getConfig();
+        const payload = prepareReviewPayload(formValues);
+        return invokeFunction(config.edgeFunctions?.submitReview || "submit-review", payload);
+    }
+
     window.NikasApi = {
         getClient,
         readyClient: getClientAsync,
         isConfigured: hasRealSupabaseConfig,
         fetchCategories,
         fetchProducts,
+        fetchPublishedReviews,
         submitContactRequest,
         submitProductRequest,
+        submitReview,
         createIdempotencyKey,
         normalizeCategory: toCamelCategory,
         normalizeProduct: toCamelProduct,

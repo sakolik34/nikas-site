@@ -1396,6 +1396,270 @@ h3 {
     padding-bottom: 96px;
 }
 
+.reviews-section {
+    border-top: 1px solid var(--border);
+    padding-top: 76px;
+    padding-bottom: 96px;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 18px;
+    margin-top: 34px;
+}
+
+.review-card {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    min-height: 238px;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 14px 34px rgba(32, 32, 32, 0.07);
+}
+
+.review-card-meta {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.review-card-meta strong {
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.review-card-meta time {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: right;
+}
+
+.review-stars {
+    margin: 0;
+    color: #c48125;
+    font-size: 21px;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+.review-body {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.review-author {
+    margin: auto 0 0;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.reviews-empty {
+    margin: 32px 0 0;
+    color: var(--muted);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.review-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 32px;
+    padding: 22px 24px;
+    border: 1px solid rgba(47, 107, 79, 0.24);
+    border-radius: 8px;
+    background: rgba(47, 107, 79, 0.06);
+}
+
+.review-cta p {
+    margin: 0 0 5px;
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.review-cta span {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.review-cta .button {
+    flex: 0 0 auto;
+    min-height: 50px;
+    white-space: nowrap;
+}
+
+.review-dialog {
+    width: min(620px, calc(100vw - 32px));
+    max-height: calc(100svh - 32px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+}
+
+.review-dialog::backdrop {
+    background: rgba(5, 7, 5, 0.72);
+    backdrop-filter: blur(10px);
+}
+
+.review-dialog-panel {
+    position: relative;
+    display: grid;
+    gap: 16px;
+    padding: 30px;
+    background: #ffffff;
+}
+
+.review-dialog-panel h2 {
+    max-width: calc(100% - 46px);
+    margin: 0;
+    font-size: clamp(27px, 4vw, 38px);
+}
+
+.review-dialog-intro {
+    margin: -4px 0 4px;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.review-dialog-panel > label {
+    display: grid;
+    gap: 8px;
+}
+
+.review-dialog-panel label > span,
+.review-rating-fieldset legend {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.review-dialog-panel input,
+.review-dialog-panel select,
+.review-dialog-panel textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+}
+
+.review-dialog-panel input,
+.review-dialog-panel select {
+    min-height: 48px;
+    padding: 0 14px;
+}
+
+.review-dialog-panel textarea {
+    min-height: 130px;
+    padding: 14px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.review-dialog-panel input:focus,
+.review-dialog-panel select:focus,
+.review-dialog-panel textarea:focus {
+    outline: none;
+    border-color: rgba(47, 107, 79, 0.58);
+    box-shadow: 0 0 0 4px rgba(47, 107, 79, 0.12);
+}
+
+.review-rating-fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.review-rating-fieldset legend {
+    margin-bottom: 8px;
+}
+
+.review-rating-options {
+    display: flex;
+    gap: 8px;
+}
+
+.review-rating-options label {
+    position: relative;
+}
+
+.review-rating-options input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.review-rating-options span {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: #b3751f;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.review-rating-options input:checked + span {
+    border-color: #b3751f;
+    background: #b3751f;
+    color: #ffffff;
+}
+
+.review-rating-options input:focus-visible + span {
+    outline: 3px solid rgba(47, 107, 79, 0.28);
+    outline-offset: 2px;
+}
+
+.review-dialog-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: grid;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.review-submit {
+    width: 100%;
+    min-height: 52px;
+    cursor: pointer;
+}
+
 .contacts-copy {
     display: grid;
     gap: 16px;
@@ -1914,6 +2178,11 @@ h3 {
         grid-template-columns: 1fr;
     }
 
+    .review-cta {
+        align-items: start;
+        flex-direction: column;
+    }
+
     .site-footer {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -2153,6 +2422,62 @@ h3 {
     .contact-form {
         grid-template-columns: 1fr;
         padding: 18px;
+    }
+
+    .reviews-section {
+        padding-top: 56px;
+        padding-bottom: 72px;
+    }
+
+    .reviews-grid {
+        gap: 14px;
+        margin-top: 24px;
+    }
+
+    .review-card {
+        min-height: 0;
+        padding: 18px;
+    }
+
+    .review-card-meta {
+        align-items: start;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .review-card-meta time {
+        text-align: left;
+    }
+
+    .review-cta {
+        gap: 18px;
+        padding: 20px;
+    }
+
+    .review-cta p {
+        font-size: 18px;
+    }
+
+    .review-cta .button {
+        width: 100%;
+    }
+
+    .review-dialog {
+        width: min(100%, calc(100vw - 20px));
+        max-height: calc(100svh - 20px);
+    }
+
+    .review-dialog-panel {
+        padding: 24px 18px 20px;
+    }
+
+    .review-rating-options {
+        justify-content: space-between;
+    }
+
+    .review-rating-options span {
+        width: 48px;
+        height: 48px;
     }
 
     .section-heading {

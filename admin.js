@@ -38,12 +38,27 @@ const contactRequestsSummary = document.getElementById("contactRequestsSummary")
 const productRequestsSummary = document.getElementById("productRequestsSummary");
 const contactRequestsBadge = document.getElementById("contactRequestsBadge");
 const productRequestsBadge = document.getElementById("productRequestsBadge");
+const reviewsList = document.getElementById("reviewsList");
+const reviewsSummary = document.getElementById("reviewsSummary");
+const reviewRequestsBadge = document.getElementById("reviewRequestsBadge");
+const reviewSearch = document.getElementById("reviewSearch");
+const reviewStatusFilter = document.getElementById("reviewStatusFilter");
+const newReviewButton = document.getElementById("newReviewButton");
+const refreshReviewsButton = document.getElementById("refreshReviewsButton");
+const reviewAdminForm = document.getElementById("reviewAdminForm");
+const reviewAdminFormMode = document.getElementById("reviewAdminFormMode");
+const reviewAdminFormTitle = document.getElementById("reviewAdminFormTitle");
+const reviewAdminFormMessage = document.getElementById("reviewAdminFormMessage");
+const resetReviewForm = document.getElementById("resetReviewForm");
+const saveReviewButton = document.getElementById("saveReviewButton");
+const deleteReviewButton = document.getElementById("deleteReviewButton");
 
 let supabaseAdmin = null;
 let categories = [];
 let products = [];
 let contactRequests = [];
 let productRequests = [];
+let reviews = [];
 let selectedProductId = "";
 let currentUser = null;
 let savingProduct = false;
@@ -327,6 +342,8 @@ document.querySelectorAll("[data-admin-tab]").forEach((button) => {
             loadContactRequests();
         } else if (target === "orders") {
             loadProductRequests();
+        } else if (target === "reviews") {
+            loadReviews();
         }
     });
 });
@@ -610,7 +627,8 @@ async function loadAdminData() {
     populateCategoryControls();
     renderProducts();
     renderProductReadiness();
-    await Promise.all([loadContactRequests(), loadProductRequests()]);
+    resetReviewFormState();
+    await Promise.all([loadContactRequests(), loadProductRequests(), loadReviews()]);
     setMessage(adminGlobalMessage, "Данные загружены.", "success");
 }
 
@@ -677,6 +695,7 @@ function setTabBadge(element, count) {
 function updateRequestBadges() {
     setTabBadge(contactRequestsBadge, countByStatus(contactRequests, "new"));
     setTabBadge(productRequestsBadge, countByStatus(productRequests, "new"));
+    setTabBadge(reviewRequestsBadge, countByStatus(reviews, "pending"));
 }
 
 function renderProducts() {
@@ -1581,6 +1600,264 @@ async function loadProductRequests() {
     renderProductRequests();
 }
 
+function reviewProductLabel(productId) {
+    const product = products.find((item) => item.id === productId);
+    return product ? (localField(product, "name") || product.slug) : "Товар удалён из каталога";
+}
+
+function reviewStatusLabel(status) {
+    return {
+        pending: "На проверке",
+        published: "Опубликован",
+        hidden: "Скрыт"
+    }[status] || "Неизвестный статус";
+}
+
+function reviewStatusTone(status) {
+    return {
+        pending: "warm",
+        published: "green",
+        hidden: "neutral"
+    }[status] || "neutral";
+}
+
+function renderReviewProductOptions(selectedId = "") {
+    const select = reviewAdminForm?.elements.product_id;
+
+    if (!select) {
+        return;
+    }
+
+    select.replaceChildren(option("", "Выберите товар"));
+    products.forEach((product) => select.append(option(product.id, localField(product, "name") || product.slug)));
+    select.value = products.some((product) => product.id === selectedId) ? selectedId : "";
+}
+
+function resetReviewFormState() {
+    if (!reviewAdminForm) {
+        return;
+    }
+
+    reviewAdminForm.reset();
+    reviewAdminForm.elements.id.value = "";
+    reviewAdminForm.elements.rating.value = "5";
+    reviewAdminForm.elements.status.value = "published";
+    reviewAdminFormMode.textContent = "Новый отзыв";
+    reviewAdminFormTitle.textContent = "Добавить отзыв";
+    saveReviewButton.textContent = "Сохранить отзыв";
+    deleteReviewButton.hidden = true;
+    setMessage(reviewAdminFormMessage, "");
+    renderReviewProductOptions();
+}
+
+function fillReviewForm(reviewId) {
+    const review = reviews.find((item) => item.id === reviewId);
+
+    if (!review) {
+        return;
+    }
+
+    renderReviewProductOptions(review.product_id);
+    reviewAdminForm.elements.id.value = review.id;
+    reviewAdminForm.elements.author_name.value = review.author_name || "";
+    reviewAdminForm.elements.rating.value = String(review.rating);
+    reviewAdminForm.elements.body.value = review.body || "";
+    reviewAdminForm.elements.status.value = review.status;
+    reviewAdminFormMode.textContent = "Редактирование отзыва";
+    reviewAdminFormTitle.textContent = reviewProductLabel(review.product_id);
+    saveReviewButton.textContent = "Сохранить изменения";
+    deleteReviewButton.hidden = false;
+    setMessage(reviewAdminFormMessage, "");
+    reviewAdminForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    reviewAdminForm.elements.author_name.focus();
+}
+
+function filteredReviews() {
+    const query = reviewSearch?.value.trim().toLowerCase() || "";
+    const status = reviewStatusFilter?.value || "all";
+
+    return reviews.filter((review) => {
+        const matchesStatus = status === "all" || review.status === status;
+        const matchesSearch = !query || [
+            review.author_name,
+            review.body,
+            review.id,
+            reviewProductLabel(review.product_id)
+        ].filter(Boolean).join(" ").toLowerCase().includes(query);
+        return matchesStatus && matchesSearch;
+    });
+}
+
+function renderReviews() {
+    if (!reviewsList) {
+        return;
+    }
+
+    reviewsList.replaceChildren();
+    const rows = filteredReviews();
+    const pendingCount = countByStatus(reviews, "pending");
+    reviewsSummary.textContent = `Показано отзывов: ${rows.length}. На проверке: ${pendingCount}.`;
+
+    if (!rows.length) {
+        const empty = document.createElement("p");
+        empty.className = "admin-message";
+        empty.textContent = reviews.length ? "По вашему поиску ничего не найдено." : "Отзывов пока нет.";
+        reviewsList.append(empty);
+        return;
+    }
+
+    rows.forEach((review) => {
+        const card = document.createElement("article");
+        card.className = "request-card review-admin-card";
+
+        const head = document.createElement("div");
+        head.className = "request-card-head";
+        const identity = document.createElement("div");
+        identity.className = "request-identity";
+        const id = document.createElement("p");
+        id.className = "request-id";
+        id.textContent = `№ ${review.id.slice(0, 8).toUpperCase()} · ${formatRequestDate(review.created_at)}`;
+        const title = document.createElement("h3");
+        title.textContent = reviewProductLabel(review.product_id);
+        identity.append(id, title);
+
+        const status = createBadge(reviewStatusLabel(review.status), reviewStatusTone(review.status));
+        head.append(identity, status);
+
+        const rating = document.createElement("p");
+        rating.className = "review-admin-stars";
+        rating.textContent = "★".repeat(review.rating) + "☆".repeat(5 - review.rating);
+        rating.setAttribute("aria-label", `Оценка ${review.rating} из 5`);
+
+        const author = document.createElement("p");
+        author.textContent = `Автор: ${review.author_name || "Покупатель Nikas"}`;
+        const body = document.createElement("p");
+        body.className = "request-message";
+        body.textContent = review.body || "Текстовый комментарий не оставлен.";
+
+        const actions = document.createElement("div");
+        actions.className = "review-admin-actions";
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "admin-secondary";
+        edit.textContent = "Редактировать";
+        edit.addEventListener("click", () => fillReviewForm(review.id));
+
+        const statusButton = document.createElement("button");
+        statusButton.type = "button";
+        statusButton.className = "admin-secondary";
+        statusButton.textContent = review.status === "published" ? "Скрыть" : "Опубликовать";
+        statusButton.addEventListener("click", () => updateReviewStatus(
+            review.id,
+            review.status === "published" ? "hidden" : "published",
+            statusButton
+        ));
+
+        actions.append(edit, statusButton);
+        card.append(head, rating, author, body, actions);
+        reviewsList.append(card);
+    });
+}
+
+async function loadReviews() {
+    if (!reviewsList) {
+        return;
+    }
+
+    reviewsSummary.textContent = "Загружаем отзывы...";
+    const { data, error } = await supabaseAdmin
+        .from("product_reviews")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(160);
+
+    if (error) {
+        reviewsSummary.textContent = "Отзывы пока не включены в базе данных.";
+        renderRequestError(
+            reviewsList,
+            "Сначала выполните SQL-файл supabase/migrations/20260902_product_reviews.sql в Supabase SQL Editor."
+        );
+        return;
+    }
+
+    reviews = data || [];
+    updateRequestBadges();
+    renderReviews();
+}
+
+async function updateReviewStatus(reviewId, status, button) {
+    button.disabled = true;
+    const { error } = await supabaseAdmin.from("product_reviews").update({ status }).eq("id", reviewId);
+
+    if (error) {
+        setMessage(adminGlobalMessage, error.message, "error");
+        button.disabled = false;
+        return;
+    }
+
+    setMessage(adminGlobalMessage, "Статус отзыва обновлён.", "success");
+    await loadReviews();
+}
+
+async function saveReview(event) {
+    event.preventDefault();
+
+    if (!reviewAdminForm.checkValidity()) {
+        setMessage(reviewAdminFormMessage, "Выберите товар и оценку.", "error");
+        reviewAdminForm.reportValidity();
+        return;
+    }
+
+    const reviewId = reviewAdminForm.elements.id.value;
+    const payload = {
+        product_id: reviewAdminForm.elements.product_id.value,
+        author_name: reviewAdminForm.elements.author_name.value.trim() || null,
+        rating: Number(reviewAdminForm.elements.rating.value),
+        body: reviewAdminForm.elements.body.value.trim() || null,
+        status: reviewAdminForm.elements.status.value,
+        language: window.NikasI18n?.getLanguage?.() || "ru",
+        source: "admin"
+    };
+
+    setButtonLoading(saveReviewButton, true, "Сохраняем...", "Сохранить отзыв");
+    setMessage(reviewAdminFormMessage, "Сохраняем отзыв...");
+    const result = reviewId
+        ? await supabaseAdmin.from("product_reviews").update(payload).eq("id", reviewId)
+        : await supabaseAdmin.from("product_reviews").insert(payload);
+
+    if (result.error) {
+        setMessage(reviewAdminFormMessage, result.error.message, "error");
+        setButtonLoading(saveReviewButton, false, "Сохраняем...", reviewId ? "Сохранить изменения" : "Сохранить отзыв");
+        return;
+    }
+
+    setMessage(adminGlobalMessage, reviewId ? "Отзыв обновлён." : "Отзыв добавлен.", "success");
+    setButtonLoading(saveReviewButton, false, "Сохраняем...", "Сохранить отзыв");
+    resetReviewFormState();
+    await loadReviews();
+}
+
+async function deleteReview() {
+    const reviewId = reviewAdminForm.elements.id.value;
+
+    if (!reviewId || !window.confirm("Удалить этот отзыв без возможности восстановления?")) {
+        return;
+    }
+
+    deleteReviewButton.disabled = true;
+    const { error } = await supabaseAdmin.from("product_reviews").delete().eq("id", reviewId);
+
+    if (error) {
+        setMessage(reviewAdminFormMessage, error.message, "error");
+        deleteReviewButton.disabled = false;
+        return;
+    }
+
+    resetReviewFormState();
+    await loadReviews();
+    setMessage(adminGlobalMessage, "Отзыв удалён.", "success");
+}
+
 function renderRequestError(container, message) {
     container.replaceChildren();
     const error = document.createElement("p");
@@ -2288,6 +2565,17 @@ async function updateRequestStatus(type, id, status) {
 
 productSearch.addEventListener("input", renderProducts);
 productCategoryFilter.addEventListener("change", renderProducts);
+reviewSearch?.addEventListener("input", renderReviews);
+reviewStatusFilter?.addEventListener("change", renderReviews);
+newReviewButton?.addEventListener("click", () => {
+    resetReviewFormState();
+    reviewAdminForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    reviewAdminForm.elements.product_id.focus();
+});
+resetReviewForm?.addEventListener("click", resetReviewFormState);
+refreshReviewsButton?.addEventListener("click", loadReviews);
+reviewAdminForm?.addEventListener("submit", saveReview);
+deleteReviewButton?.addEventListener("click", deleteReview);
 newProductButton.addEventListener("click", resetForm);
 resetProductForm.addEventListener("click", resetForm);
 addPackOptionButton.addEventListener("click", () => {
@@ -2361,6 +2649,8 @@ window.addEventListener("nikas:languagechange", () => {
     renderProducts();
     loadContactRequests();
     loadProductRequests();
+    renderReviewProductOptions(reviewAdminForm?.elements.product_id.value || "");
+    renderReviews();
 });
 
 window.setInterval(() => {
@@ -2373,6 +2663,7 @@ window.setInterval(() => {
     ) {
         loadContactRequests();
         loadProductRequests();
+        loadReviews();
     }
 }, 45000);
 

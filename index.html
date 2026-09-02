@@ -6,7 +6,8 @@
     <meta name="description" content="Nikas - качественные пищевые продукты для дома, кафе и магазинов.">
     <title>Nikas - пищевые продукты</title>
     <link rel="icon" href="./icon_nikas-2.png">
-    <link rel="stylesheet" href="./index.css?v=20260902-hero-v4">
+    <script src="./site-features.js?v=20260902-reviews"></script>
+    <link rel="stylesheet" href="./index.css?v=20260902-reviews">
 </head>
 <body>
     <header class="site-header">
@@ -19,8 +20,9 @@
         <nav class="header-nav" aria-label="Основная навигация" data-i18n-aria-label="nav.mainNav">
             <a href="#home" data-i18n="nav.home">Главная</a>
             <a href="#catalog" data-i18n="nav.catalog">Каталог</a>
-            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="./about.html" data-feature="about" data-i18n="nav.about">О компании</a>
             <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+            <a href="#reviews" data-i18n="nav.reviews">Отзывы</a>
         </nav>
 
         <a class="header-logo" href="#home" aria-label="Nikas">
@@ -91,8 +93,9 @@
         <nav class="sidebar-menu" aria-label="Меню сайта" data-i18n-aria-label="nav.sidebar">
             <a href="#home" data-i18n="nav.home">Главная</a>
             <a href="#catalog" data-i18n="nav.catalog">Каталог</a>
-            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="./about.html" data-feature="about" data-i18n="nav.about">О компании</a>
             <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+            <a href="#reviews" data-i18n="nav.reviews">Отзывы</a>
         </nav>
 
         <div class="sidebar-contacts">
@@ -226,7 +229,66 @@
                 </button>
             </form>
         </section>
+
+        <section class="section reviews-section" id="reviews" aria-labelledby="reviewsTitle">
+            <div class="section-heading reviews-heading">
+                <div>
+                    <p class="eyebrow" data-i18n="reviews.eyebrow">Отзывы</p>
+                    <h2 id="reviewsTitle" data-i18n="reviews.title">Что говорят о товарах Nikas</h2>
+                </div>
+                <p class="section-note" data-i18n="reviews.description">Публикуем отзывы после проверки, чтобы информация была честной и полезной.</p>
+            </div>
+
+            <div class="reviews-grid" id="reviewsGrid" aria-live="polite"></div>
+            <p class="reviews-empty" id="reviewsEmpty" hidden data-i18n="reviews.empty">Здесь скоро появятся отзывы покупателей.</p>
+
+            <div class="review-cta">
+                <div>
+                    <p data-i18n="reviews.ctaQuestion">Вы уже у нас заказывали?</p>
+                    <span data-i18n="reviews.ctaText">Поделитесь впечатлением о товаре. Отзыв появится после проверки.</span>
+                </div>
+                <button class="button primary" id="openReviewDialog" type="button" data-i18n="reviews.ctaButton">Написать отзыв</button>
+            </div>
+        </section>
     </main>
+
+    <dialog class="review-dialog" id="reviewDialog" aria-labelledby="reviewDialogTitle">
+        <form class="review-dialog-panel" id="reviewForm" novalidate>
+            <button class="review-dialog-close" id="closeReviewDialog" type="button" aria-label="Закрыть" data-i18n-aria-label="reviews.close">×</button>
+            <p class="eyebrow" data-i18n="reviews.eyebrow">Отзывы</p>
+            <h2 id="reviewDialogTitle" data-i18n="reviews.formTitle">Написать отзыв</h2>
+            <p class="review-dialog-intro" data-i18n="reviews.formIntro">Укажите товар и оценку. Имя и подробный текст можно не заполнять.</p>
+
+            <label>
+                <span data-i18n="reviews.productLabel">Приобретенный товар *</span>
+                <select name="productId" id="reviewProductId" required></select>
+            </label>
+            <label>
+                <span data-i18n="reviews.nameLabel">Ваше имя (необязательно)</span>
+                <input name="name" type="text" maxlength="120" autocomplete="name" data-i18n-placeholder="reviews.namePlaceholder" placeholder="Например, Александр">
+            </label>
+            <fieldset class="review-rating-fieldset">
+                <legend data-i18n="reviews.ratingLabel">Ваша оценка *</legend>
+                <div class="review-rating-options" id="reviewRatingOptions">
+                    <label><input name="rating" type="radio" value="1" required><span>1</span></label>
+                    <label><input name="rating" type="radio" value="2"><span>2</span></label>
+                    <label><input name="rating" type="radio" value="3"><span>3</span></label>
+                    <label><input name="rating" type="radio" value="4"><span>4</span></label>
+                    <label><input name="rating" type="radio" value="5"><span>5</span></label>
+                </div>
+            </fieldset>
+            <label>
+                <span data-i18n="reviews.textLabel">Текст отзыва (необязательно)</span>
+                <textarea name="body" rows="5" maxlength="2000" data-i18n-placeholder="reviews.textPlaceholder" placeholder="Расскажите, что вам понравилось"></textarea>
+            </label>
+            <label class="form-honeypot" aria-hidden="true">
+                <span>Не заполняйте это поле</span>
+                <input name="website" type="text" tabindex="-1" autocomplete="off">
+            </label>
+            <p class="form-message" id="reviewFormMessage" aria-live="polite"></p>
+            <button class="button primary review-submit" id="reviewSubmit" type="submit" data-i18n="reviews.submit">Отправить отзыв</button>
+        </form>
+    </dialog>
 
     <footer class="site-footer" aria-label="Контактная информация Nikas">
         <div class="footer-brand">
@@ -241,9 +303,10 @@
 
         <nav class="footer-column" aria-label="Информация">
             <h2 data-i18n="footer.info">Информация</h2>
-            <a href="./about.html" data-i18n="nav.about">О компании</a>
+            <a href="./about.html" data-feature="about" data-i18n="nav.about">О компании</a>
             <a href="#catalog" data-i18n="nav.catalog">Каталог</a>
             <a href="#contacts" data-i18n="nav.contacts">Контакты</a>
+            <a href="#reviews" data-i18n="nav.reviews">Отзывы</a>
             <a href="#home" data-i18n="nav.home">Главная</a>
         </nav>
 
@@ -332,10 +395,11 @@
     </nav>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js?v=20260901-amount"></script>
+    <script src="./i18n.js?v=20260902-reviews"></script>
     <script src="./catalog-data.js?v=20260901"></script>
-    <script src="./nikas-api.js?v=20260901-amount"></script>
+    <script src="./nikas-api.js?v=20260902-reviews"></script>
     <script src="./cart.js?v=20260901-amount"></script>
-    <script src="./index.js?v=20260830"></script>
+    <script src="./index.js?v=20260902-reviews"></script>
+    <script src="./reviews.js?v=20260902"></script>
 </body>
 </html>

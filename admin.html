@@ -55,6 +55,10 @@
                     Заявки на товары
                     <span class="admin-tab-count" id="productRequestsBadge" hidden>0</span>
                 </button>
+                <button type="button" data-admin-tab="reviews">
+                    Отзывы
+                    <span class="admin-tab-count" id="reviewRequestsBadge" hidden>0</span>
+                </button>
             </nav>
 
             <p class="admin-message" id="adminGlobalMessage" aria-live="polite"></p>
@@ -349,12 +353,98 @@
                 <p class="admin-list-summary" id="productRequestsSummary"></p>
                 <div class="request-list" id="productRequestsList"></div>
             </section>
+
+            <section class="admin-panel" data-admin-panel="reviews">
+                <div class="admin-panel-head">
+                    <div>
+                        <p class="admin-eyebrow">Отзывы покупателей</p>
+                        <h2>Проверка и публикация отзывов</h2>
+                    </div>
+                    <p>Новые отзывы с сайта сначала попадают сюда. Здесь же можно вручную создать, отредактировать, опубликовать, скрыть или удалить отзыв.</p>
+                </div>
+
+                <div class="admin-toolbar review-toolbar">
+                    <label>
+                        <span>Поиск отзыва</span>
+                        <input id="reviewSearch" type="search" placeholder="Имя, товар или текст">
+                    </label>
+                    <label>
+                        <span>Статус</span>
+                        <select id="reviewStatusFilter">
+                            <option value="all">Все</option>
+                            <option value="pending">На проверке</option>
+                            <option value="published">Опубликованные</option>
+                            <option value="hidden">Скрытые</option>
+                        </select>
+                    </label>
+                    <button class="admin-primary" id="newReviewButton" type="button">Добавить отзыв</button>
+                    <button class="admin-secondary" id="refreshReviewsButton" type="button">Обновить</button>
+                </div>
+
+                <div class="admin-grid review-admin-grid">
+                    <div>
+                        <p class="admin-list-summary" id="reviewsSummary"></p>
+                        <div class="request-list" id="reviewsList"></div>
+                    </div>
+
+                    <form class="admin-editor review-editor" id="reviewAdminForm" novalidate>
+                        <div class="admin-editor-head">
+                            <div>
+                                <p class="admin-eyebrow" id="reviewAdminFormMode">Новый отзыв</p>
+                                <h2 id="reviewAdminFormTitle">Добавить отзыв</h2>
+                                <p class="admin-editor-intro">Товар обязателен. Имя и текст можно оставить пустыми, если нужен только рейтинг.</p>
+                            </div>
+                            <button class="admin-secondary" id="resetReviewForm" type="button">Очистить форму</button>
+                        </div>
+
+                        <input name="id" type="hidden">
+
+                        <label>
+                            <span>Товар *</span>
+                            <select name="product_id" required></select>
+                        </label>
+                        <div class="admin-form-row">
+                            <label>
+                                <span>Имя покупателя</span>
+                                <input name="author_name" type="text" maxlength="120" placeholder="Например, Александр">
+                            </label>
+                            <label>
+                                <span>Оценка *</span>
+                                <select name="rating" required>
+                                    <option value="5">5 - отлично</option>
+                                    <option value="4">4 - хорошо</option>
+                                    <option value="3">3 - нормально</option>
+                                    <option value="2">2 - с замечаниями</option>
+                                    <option value="1">1 - плохо</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label>
+                            <span>Текст отзыва</span>
+                            <textarea name="body" rows="7" maxlength="2000" placeholder="Что написал покупатель"></textarea>
+                        </label>
+                        <label>
+                            <span>Статус</span>
+                            <select name="status">
+                                <option value="published">Опубликовать на сайте</option>
+                                <option value="pending">Оставить на проверке</option>
+                                <option value="hidden">Скрыть</option>
+                            </select>
+                        </label>
+                        <p class="admin-message" id="reviewAdminFormMessage" aria-live="polite"></p>
+                        <div class="admin-editor-actions">
+                            <button class="admin-primary" id="saveReviewButton" type="submit">Сохранить отзыв</button>
+                            <button class="admin-danger" id="deleteReviewButton" type="button" hidden>Удалить отзыв</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
         </section>
     </main>
 
     <script src="./supabase-config.js"></script>
-    <script src="./i18n.js?v=20260901-amount"></script>
-    <script src="./nikas-api.js?v=20260901-amount"></script>
-    <script src="./admin.js?v=20260901-amount"></script>
+    <script src="./i18n.js?v=20260902-reviews"></script>
+    <script src="./nikas-api.js?v=20260902-reviews"></script>
+    <script src="./admin.js?v=20260902-reviews"></script>
 </body>
 </html>

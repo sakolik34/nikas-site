@@ -6,6 +6,7 @@ window.NIKAS_SUPABASE_CONFIG = {
     mediaApiBaseUrl: "https://media-api.nikascompany.com",
     edgeFunctions: {
         submitContact: "submit-contact",
-        submitProductRequest: "submit-product-request"
+        submitProductRequest: "submit-product-request",
+        submitReview: "submit-review"
     }
 };
